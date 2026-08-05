@@ -1,0 +1,716 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>DiagCalc Pro — Clinical Calculator</title>
+<style>
+/* ── LIGHT THEME ── */
+:root {
+  --bg: #f4f7f9; 
+  --surface: #ffffff; 
+  --surface2: #f8fafc; 
+  --border: #e2e8f0;
+  --accent: #0284c7; 
+  --text: #0f172a; 
+  --muted: #64748b; 
+  --label: #475569;
+  --required: #ef4444; 
+  --radius: 8px;
+  
+  --success: #059669; --success-bg: #d1fae5;
+  --warn: #d97706;    --warn-bg: #fef3c7;
+  --danger: #dc2626;  --danger-bg: #fee2e2;
+  --info: #0284c7;    --info-bg: #e0f2fe;
+}
+
+/* ── DARK THEME ── */
+[data-theme="dark"] {
+  --bg: #0f172a; --surface: #1e293b; --surface2: #334155; --border: #475569;
+  --accent: #38bdf8; --text: #f8fafc; --muted: #94a3b8; --label: #cbd5e1;
+  
+  --success: #34d399; --success-bg: rgba(16, 185, 129, 0.15);
+  --warn: #fbbf24;    --warn-bg: rgba(245, 158, 11, 0.15);
+  --danger: #f87171;  --danger-bg: rgba(239, 68, 68, 0.15);
+  --info: #38bdf8;    --info-bg: rgba(14, 165, 233, 0.15);
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body { 
+  background: var(--bg); color: var(--text); 
+  font-family: system-ui, -apple-system, sans-serif;
+  min-height: 100vh; font-size: 15px; line-height: 1.5;
+  transition: background-color 0.3s, color 0.3s;
+}
+
+/* ── HEADER ── */
+header {
+  position: sticky; top: 0; z-index: 200;
+  background: var(--surface); border-bottom: 1px solid var(--border);
+  padding: 16px 24px; display: flex; justify-content: space-between; align-items: center;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+}
+.logo { font-weight: 800; font-size: 1.25rem; color: var(--accent); }
+.logo span { color: var(--text); }
+.theme-btn { background: var(--surface2); border: 1px solid var(--border); padding: 6px 12px; border-radius: 20px; cursor: pointer; color: var(--text); font-weight: 600; font-size: 0.8rem; }
+
+/* ── LAYOUT & TABS ── */
+.wrap { max-width: 900px; margin: 0 auto; padding: 24px 16px 120px; }
+.tabs { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 24px; }
+.tab {
+  flex: 1 1 calc(33.333% - 8px); min-width: 100px; padding: 10px 6px; background: var(--surface);
+  border: 1px solid var(--border); color: var(--text); font-weight: 600;
+  font-size: 0.85rem; cursor: pointer; border-radius: var(--radius); text-align: center;
+}
+.tab.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+.tab small { display: block; font-size: 0.65rem; font-weight: 400; opacity: 0.9; margin-top: 2px; }
+
+/* ── CARDS & INPUTS ── */
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 20px; overflow: hidden; }
+.card-head { padding: 20px 24px; border-bottom: 1px solid var(--border); background: var(--surface2); }
+.card-head h2 { font-size: 1.25rem; color: var(--text); }
+.card-desc { font-size: 0.85rem; color: var(--muted); margin-top: 4px; }
+.card-body { padding: 24px; }
+
+.pat-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 16px; margin-bottom: 24px; background: var(--surface2); padding: 16px; border-radius: var(--radius); border: 1px solid var(--border); }
+.input-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 16px; }
+.field { display: flex; flex-direction: column; gap: 6px; position: relative; }
+.field label { font-size: 0.85rem; color: var(--label); font-weight: 600; }
+.req-star { color: var(--required); }
+
+.field input, .field select {
+  background: var(--surface); border: 1px solid var(--border); color: var(--text); 
+  font-size: 1rem; padding: 10px 12px; border-radius: 6px; outline: none; width: 100%; transition: 0.2s;
+}
+.field input:focus, .field select:focus { border-color: var(--accent); box-shadow: 0 0 0 2px rgba(2, 132, 199, 0.2); }
+.field input.required-field { border-left: 3px solid var(--required); }
+.field input.error-field { border-color: var(--danger) !important; background: var(--danger-bg); border-left: 3px solid var(--danger); }
+
+.unit-hint { font-size: 0.75rem; color: var(--muted); }
+.inline-error-text { display: none; color: var(--danger); font-size: 0.75rem; font-weight: 600; margin-top: -2px; }
+
+.section-divider { font-size: 0.85rem; font-weight: 700; text-transform: uppercase; color: var(--accent); padding: 16px 0 8px; margin-top: 12px; border-bottom: 2px solid var(--surface2); margin-bottom: 16px; }
+
+/* ── ADVANCED TOGGLE ── */
+.adv-toggle { background: var(--surface2); color: var(--text); border: 1px solid var(--border); padding: 10px 16px; border-radius: 6px; font-weight: 600; cursor: pointer; width: 100%; margin: 24px 0 16px; transition: 0.2s; }
+.adv-toggle:hover { border-color: var(--accent); color: var(--accent); }
+.adv-container { display: none; padding: 16px; background: var(--bg); border: 1px dashed var(--border); border-radius: var(--radius); }
+.adv-container.visible { display: block; animation: fadeIn 0.3s; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(-5px); } to { opacity: 1; transform: translateY(0); } }
+
+/* ── INTERPRETATION & RESULTS ── */
+.interp-box { display: none; background: var(--info-bg); border: 1px solid var(--info); border-radius: var(--radius); padding: 16px; margin-bottom: 16px; color: var(--text); }
+.interp-box h4 { color: var(--info); margin-bottom: 6px; font-size: 0.95rem; font-weight: 700;}
+
+.results-card { display: none; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; margin-bottom: 16px; }
+.results-head { padding: 16px 24px; background: var(--surface2); border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+.results-head h3 { font-size: 1.1rem; color: var(--text); }
+
+table { width: 100%; border-collapse: collapse; }
+th { font-size: 0.75rem; text-transform: uppercase; color: var(--muted); padding: 12px 16px; text-align: left; }
+td { padding: 12px 16px; font-size: 0.9rem; border-bottom: 1px solid var(--border); vertical-align: middle; }
+tr.group-row td { background: var(--surface2); font-size: 0.75rem; font-weight: 700; text-transform: uppercase; color: var(--label); }
+.pval { font-weight: 700; }
+
+.gauge-container { width: 100px; height: 6px; background: var(--border); border-radius: 3px; position: relative; margin-top: 4px; overflow: hidden;}
+.gauge-marker { position: absolute; height: 100%; width: 4px; background: var(--text); border-radius: 2px; transform: translateX(-50%); }
+.gauge-marker.high, .gauge-marker.low, .gauge-marker.critical { background: var(--danger); }
+
+.flag { display: inline-block; padding: 4px 8px; border-radius: 4px; font-size: 0.7rem; font-weight: 700; text-transform: uppercase; }
+.flag.normal { background: var(--success-bg); color: var(--success); }
+.flag.high, .flag.critical { background: var(--danger-bg); color: var(--danger); }
+.flag.low { background: var(--warn-bg); color: var(--warn); }
+
+.summary { padding: 16px 24px; background: var(--surface2); display: flex; gap: 24px; flex-wrap: wrap; }
+.sum-item .sv { font-size: 1.25rem; font-weight: 800; }
+.sum-item .sl { font-size: 0.7rem; color: var(--muted); text-transform: uppercase; display: block;}
+
+/* ── FORMULAS BOX ── */
+.formula-section { padding: 16px 24px; background: var(--surface); border-top: 1px solid var(--border); }
+.formula-toggle { background: transparent; border: none; color: var(--muted); font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 6px; font-size: 0.85rem; padding: 0; transition: color 0.2s; }
+.formula-toggle:hover { color: var(--accent); }
+.formula-content { display: none; padding: 12px; background: var(--surface2); border-radius: var(--radius); margin-top: 12px; font-size: 0.85rem; color: var(--label); line-height: 1.6; border: 1px dashed var(--border); }
+.formula-content.visible { display: block; animation: fadeIn 0.3s; }
+.formula-content strong { color: var(--accent); }
+
+/* ── STICKY ACTIONS ── */
+.sticky-bottom { position: fixed; bottom: 0; left: 0; right: 0; background: var(--surface); padding: 12px 24px; border-top: 1px solid var(--border); box-shadow: 0 -4px 10px rgba(0,0,0,0.05); display: flex; gap: 12px; z-index: 100; justify-content: center; }
+.calc-btn, .act-btn { padding: 12px 20px; font-weight: 700; border-radius: 8px; cursor: pointer; border: none; font-size: 0.95rem; flex: 1; max-width: 400px; }
+.calc-btn { background: var(--accent); color: white; transition: 0.2s; }
+.calc-btn:hover { filter: brightness(1.1); }
+.calc-btn:disabled { background: var(--muted); cursor: not-allowed; opacity: 0.7; }
+.act-btn { background: var(--surface2); color: var(--text); border: 1px solid var(--border); display: none; }
+.act-btn.visible { display: block; }
+
+.global-error { color: var(--danger); font-size: 0.95rem; font-weight: 600; padding: 12px; background: var(--danger-bg); border-radius: 6px; border: 1px solid #fca5a5; display: none; margin-top: 16px; }
+
+@media(max-width: 600px) { th:nth-child(4), td:nth-child(4) { display: none; } }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">Diag<span>Calc</span> Pro</div>
+  <button class="theme-btn" onclick="toggleTheme()">🌙 Dark Mode</button>
+</header>
+
+<div class="wrap">
+  <div class="tabs">
+    <button class="tab active" onclick="switchTest('cbc',this)">CBC<small>Blood Count</small></button>
+    <button class="tab" onclick="switchTest('lft',this)">LFT<small>Liver Function</small></button>
+    <button class="tab" onclick="switchTest('rft',this)">KFT/RFT<small>Renal Function</small></button>
+    <button class="tab" onclick="switchTest('lipid',this)">Lipid<small>Profile</small></button>
+    <button class="tab" onclick="switchTest('coag',this)">Coag<small>PT / APTT</small></button>
+    <button class="tab" onclick="switchTest('iron',this)">Iron<small>Studies</small></button>
+    <button class="tab" onclick="switchTest('diab',this)">Metabolic<small>Diabetes</small></button>
+  </div>
+
+  <div class="card">
+    <div class="card-head">
+      <h2 id="test-title">CBC — Complete Blood Count</h2>
+      <div class="card-desc" id="test-desc">Enter raw machine values.</div>
+    </div>
+    <div class="card-body">
+      <div class="pat-row" id="pat-row"></div>
+      <div id="field-sections"></div>
+      <div class="global-error" id="global-error"></div>
+    </div>
+  </div>
+
+  <div class="interp-box" id="interp-box">
+    <h4 id="interp-title">🔬 Interpretation</h4>
+    <p id="interp-text"></p>
+  </div>
+
+  <div class="results-card" id="results-card">
+    <div class="results-head">
+      <h3 id="res-title">Laboratory Results</h3>
+    </div>
+    <div style="overflow-x:auto;">
+      <table>
+        <thead><tr><th>Parameter</th><th>Result</th><th>Unit</th><th>Reference</th><th>Flag</th></tr></thead>
+        <tbody id="res-body"></tbody>
+      </table>
+    </div>
+    <div class="summary" id="res-summary"></div>
+    
+    <div class="formula-section" id="formula-section" style="display:none;">
+      <button class="formula-toggle" onclick="document.getElementById('formula-content').classList.toggle('visible')">📐 View Formulas Used</button>
+      <div class="formula-content" id="formula-content"></div>
+    </div>
+  </div>
+</div>
+
+<div class="sticky-bottom">
+    <button class="act-btn" id="btn-reset" onclick="resetAll()">↺ Reset</button>
+    <button class="calc-btn" id="btn-calc" onclick="calculate()">⚡ Calculate</button>
+    <button class="act-btn" id="btn-copy" onclick="copyResults()">📋 Copy</button>
+</div>
+
+<script>
+function toggleTheme() {
+  const body = document.body;
+  const isDark = body.getAttribute('data-theme') === 'dark';
+  body.setAttribute('data-theme', isDark ? 'light' : 'dark');
+  document.querySelector('.theme-btn').textContent = isDark ? '🌙 Dark Mode' : '☀️ Light Mode';
+}
+
+const TESTS = {
+  // ==========================================
+  // CBC
+  // ==========================================
+  cbc: {
+    title: 'CBC — Complete Blood Count', desc: 'Auto indices, Mentzer Index, and predictive PBS morphology.',
+    formulas: '<strong>MCV</strong> = (HCT ÷ RBC) × 10 | <strong>MCH</strong> = (Hb ÷ RBC) × 10 | <strong>MCHC</strong> = (Hb ÷ HCT) × 100 | <strong>Mentzer Index</strong> = MCV ÷ RBC',
+    patient: ['gender','age'],
+    sections:[
+      { label:'RBC Series', advanced: false, fields:[
+        {id:'hb', label:'Hemoglobin', unit:'g/dL', ph:'e.g. 13.5', req:true, max: 30},
+        {id:'rbc', label:'RBC Count', unit:'×10⁶/µL', ph:'e.g. 4.5', req:true, max: 15},
+        {id:'hct', label:'Hematocrit / PCV', unit:'%', ph:'e.g. 42', req:true, max: 80},
+      ]},
+      { label:'WBC / Differential', advanced: false, fields:[
+        {id:'wbc', label:'WBC (TLC)', unit:'×10³/µL', ph:'e.g. 7.5', req:true, max: 300},
+        {id:'neut', label:'Neutrophils', unit:'%', ph:'60', req:false, max: 100},
+        {id:'lymph', label:'Lymphocytes', unit:'%', ph:'30', req:false, max: 100},
+        {id:'mono', label:'Monocytes', unit:'%', ph:'5', req:false, max: 100},
+        {id:'eosin', label:'Eosinophils', unit:'%', ph:'3', req:false, max: 100},
+      ]},
+      { label:'Platelets', advanced: false, fields:[
+        {id:'plt', label:'Platelet Count', unit:'×10³/µL', ph:'250', req:true, max: 3000},
+      ]},
+      { label:'Advanced Indices', advanced: true, fields:[
+        {id:'rdwcv', label:'RDW-CV', unit:'%', ph:'13.0', req:false, max: 40},
+        {id:'mpv', label:'MPV', unit:'fL', ph:'9.5', req:false, max: 20},
+        {id:'retic', label:'Reticulocytes', unit:'%', ph:'1.5', req:false, max: 30},
+      ]}
+    ],
+    refs: (g) => {
+      const m = g==='male', c = g==='child';
+      return {
+        hb: c?[11,14]:m?[13.5,17.5]:[12,15.5], rbc: c?[3.8,5.5]:m?[4.5,5.9]:[3.8,5.2],
+        hct: c?[35,45]:m?[41,53]:[36,46], wbc: [4,11], neut:[40,70], lymph:[20,40],
+        mono:[2,8], eosin: [1,6], plt:[150,400], mcv: c?[70,86]:[80,100], 
+        mch:[27,33], mchc:[32,36], rdwcv: [11.5,14.5], mpv: [7.5,12.5], 
+        mentzer: [13, 999], retic: [0.5, 2.5]
+      };
+    },
+    compute: (v, refs) => {
+      const mcv = (v.hct&&v.rbc) ? +((v.hct/v.rbc)*10).toFixed(1) : null;
+      const mch = (v.hb&&v.rbc) ? +((v.hb/v.rbc)*10).toFixed(1) : null;
+      const mchc = (v.hb&&v.hct) ? +((v.hb/v.hct)*100).toFixed(1) : null;
+      const mentzer = (mcv&&v.rbc) ? +(mcv/v.rbc).toFixed(1) : null;
+      
+      let pbs = [];
+      if(mcv) {
+          if (mcv < 80) pbs.push("Microcytic");
+          else if (mcv > 100) pbs.push("Macrocytic");
+          else pbs.push("Normocytic");
+      }
+      if(mch && mchc) {
+          if (mch < 27 || mchc < 32) pbs.push("Hypochromic");
+          else pbs.push("Normochromic");
+      }
+      if(v.rdwcv && v.rdwcv > 14.5) pbs.push("Anisocytosis");
+      if(v.plt) {
+          if (v.plt < 150) pbs.push("Thrombocytopenia");
+          if (v.plt > 400) pbs.push("Thrombocytosis");
+      }
+      if(v.wbc) {
+          if (v.wbc > 11) pbs.push("Leukocytosis");
+          if (v.wbc < 4) pbs.push("Leukopenia");
+      }
+
+      let interpretation = pbs.length > 0 ? "Smear Estimation: RBCs appear " + pbs.slice(0,2).join(", ") + ". " + pbs.slice(2).join(", ") + "." : null;
+
+      if(mentzer) {
+          let mText = mentzer < 13 ? " Mentzer < 13 suggests Thalassemia Trait." : " Mentzer > 13 suggests Iron Deficiency.";
+          interpretation = (interpretation || "") + mText;
+      }
+
+      return {
+        interpTitle: "🔬 Hematology Interpretation",
+        interpretation: interpretation,
+        rows: [
+          {g:'RBC Series', p:'Hemoglobin', val:v.hb, unit:'g/dL', ref:refs.hb},
+          {g:'RBC Series', p:'RBC Count', val:v.rbc, unit:'×10⁶/µL', ref:refs.rbc},
+          {g:'RBC Series', p:'Hematocrit', val:v.hct, unit:'%', ref:refs.hct},
+          {g:'Indices', p:'MCV', val:mcv, unit:'fL', ref:refs.mcv},
+          {g:'Indices', p:'MCH', val:mch, unit:'pg', ref:refs.mch},
+          {g:'Indices', p:'MCHC', val:mchc, unit:'g/dL', ref:refs.mchc},
+          {g:'Indices', p:'RDW-CV', val:v.rdwcv, unit:'%', ref:refs.rdwcv},
+          {g:'Indices', p:'Mentzer Index', val:mentzer, unit:'', ref:refs.mentzer},
+          {g:'WBC', p:'WBC Total', val:v.wbc, unit:'×10³/µL', ref:refs.wbc},
+          {g:'Platelets', p:'Platelet Count', val:v.plt, unit:'×10³/µL', ref:refs.plt},
+          {g:'Platelets', p:'MPV', val:v.mpv, unit:'fL', ref:refs.mpv},
+          {g:'Advanced', p:'Reticulocyte Count', val:v.retic, unit:'%', ref:refs.retic},
+        ]
+      };
+    }
+  },
+
+  // ==========================================
+  // LFT
+  // ==========================================
+  lft: {
+    title: 'LFT — Liver Function Test', desc: 'Auto calculates indirect bilirubin, Globulin, and De Ritis ratio.', 
+    formulas: '<strong>Indirect Bili</strong> = Total Bili − Direct Bili | <strong>AST/ALT Ratio (De Ritis)</strong> = AST ÷ ALT | <strong>Globulin</strong> = Total Protein − Albumin | <strong>A/G Ratio</strong> = Albumin ÷ Globulin',
+    patient: ['gender'],
+    sections:[
+      { label:'Bilirubin', advanced: false, fields:[
+        {id:'tbil', label:'Total Bilirubin', unit:'mg/dL', ph:'1.0', req:true, max: 50},
+        {id:'dbil', label:'Direct Bilirubin', unit:'mg/dL', ph:'0.3', req:true, max: 50},
+      ]},
+      { label:'Enzymes & Proteins', advanced: false, fields:[
+        {id:'ast', label:'AST (SGOT)', unit:'U/L', ph:'25', req:true, max: 20000},
+        {id:'alt', label:'ALT (SGPT)', unit:'U/L', ph:'30', req:true, max: 20000},
+        {id:'alp', label:'Alkaline Phosphatase', unit:'U/L', ph:'80', req:false, max: 5000},
+        {id:'tprot', label:'Total Protein', unit:'g/dL', ph:'7.0', req:false, max: 15},
+        {id:'alb', label:'Albumin', unit:'g/dL', ph:'4.2', req:false, max: 10},
+      ]}
+    ],
+    refs: () => ({ tbil:[0.2,1.2], dbil:[0.0,0.3], ibil:[0.1,0.9], ast:[10,40], alt:[7,56], alp:[44,147], tprot:[6.3,8.2], alb:[3.5,5.0], glob:[2.0,3.5], agratio:[1.1,2.5] }),
+    compute: (v, refs) => {
+      const ibil = (v.tbil!=null&&v.dbil!=null) ? +(v.tbil-v.dbil).toFixed(2):null;
+      const ratio = (v.ast&&v.alt&&v.alt>0) ? +(v.ast/v.alt).toFixed(2):null;
+      const glob = (v.tprot&&v.alb) ? +(v.tprot-v.alb).toFixed(2):null;
+      const agr = (v.alb&&glob&&glob>0) ? +(v.alb/glob).toFixed(2):null;
+      
+      const interp = ratio ? `De Ritis (AST/ALT) Ratio is ${ratio}. ` + (ratio>2?"Pattern suggests alcoholic liver disease or muscle injury.":ratio<1?"Pattern suggests viral hepatitis or NAFLD.":"") : null;
+      return { interpTitle: "🔬 De Ritis Interpretation", interpretation: interp, rows: [
+          {g:'Bilirubin', p:'Total Bilirubin', val:v.tbil, unit:'mg/dL', ref:refs.tbil}, {g:'Bilirubin', p:'Direct Bilirubin', val:v.dbil, unit:'mg/dL', ref:refs.dbil}, {g:'Bilirubin', p:'Indirect Bili', val:ibil, unit:'mg/dL', ref:refs.ibil},
+          {g:'Enzymes', p:'AST', val:v.ast, unit:'U/L', ref:refs.ast}, {g:'Enzymes', p:'ALT', val:v.alt, unit:'U/L', ref:refs.alt}, {g:'Enzymes', p:'AST/ALT Ratio', val:ratio, unit:'', ref:[0.7,1.2]}, {g:'Enzymes', p:'ALP', val:v.alp, unit:'U/L', ref:refs.alp},
+          {g:'Proteins', p:'Total Protein', val:v.tprot, unit:'g/dL', ref:refs.tprot}, {g:'Proteins', p:'Albumin', val:v.alb, unit:'g/dL', ref:refs.alb}, {g:'Proteins', p:'Globulin', val:glob, unit:'g/dL', ref:refs.glob}, {g:'Proteins', p:'A/G Ratio', val:agr, unit:'', ref:refs.agratio},
+      ]};
+    }
+  },
+
+  // ==========================================
+  // RFT / KFT
+  // ==========================================
+  rft: {
+    title: 'KFT / RFT — Kidney Function', desc: 'Serum Creatinine + Age + Gender required for eGFR (CKD-EPI 2021).', 
+    formulas: '<strong>eGFR (CKD-EPI 2021)</strong> = 142 × min(Scr/κ, 1)^α × max(Scr/κ, 1)^−1.200 × 0.9938^Age × 1.012 [if female] | <strong>BUN/Creatinine Ratio</strong> = BUN ÷ Creatinine | <strong>Urea</strong> = BUN × 2.14',
+    patient: ['gender','age'],
+    sections:[
+      { label:'Core Tests', advanced: false, fields:[
+        {id:'creat', label:'Serum Creatinine', unit:'mg/dL', ph:'0.9', req:true, max: 30},
+        {id:'bun', label:'BUN / Urea N.', unit:'mg/dL', ph:'14', req:false, max: 300},
+      ]},
+      { label:'Electrolytes & Minerals', advanced: false, fields:[
+        {id:'uricac', label:'Uric Acid', unit:'mg/dL', ph:'5.5', req:false, max: 30},
+        {id:'sodium', label:'Sodium (Na⁺)', unit:'mEq/L', ph:'140', req:false, max: 200},
+        {id:'potass', label:'Potassium (K⁺)', unit:'mEq/L', ph:'4.0', req:false, max: 15},
+      ]}
+    ],
+    refs: (g) => ({ creat: g==='male'?[0.7,1.2]:[0.5,1.1], bun: [7,20], uricac: g==='male'?[3.4,7.0]:[2.4,6.0], sodium:[136,145], potass:[3.5,5.0], egfr: [60,999], buncratio:[10,20] }),
+    compute: (v, refs, pat) => {
+      const age = pat.age; const female = pat.gender==='female';
+      let egfr = null;
+      if(v.creat && age){
+        const k = female ? 0.7 : 0.9; const alpha = female ? -0.241 : -0.302;
+        egfr = +(142 * Math.pow(Math.min(v.creat/k,1),alpha) * Math.pow(Math.max(v.creat/k,1),-1.200) * Math.pow(0.9938,age) * (female?1.012:1)).toFixed(1);
+      }
+      const buncratio = (v.bun&&v.creat&&v.creat>0)?+(v.bun/v.creat).toFixed(1):null;
+      const urea = v.bun?+(v.bun*2.14).toFixed(1):null;
+      
+      let stage = '';
+      if(egfr) {
+          if(egfr>=90) stage = 'G1 (Normal or High)'; else if(egfr>=60) stage = 'G2 (Mildly Decreased)';
+          else if(egfr>=45) stage = 'G3a (Mild to Mod Decreased)'; else if(egfr>=30) stage = 'G3b (Mod to Severely Decreased)';
+          else if(egfr>=15) stage = 'G4 (Severely Decreased)'; else stage = 'G5 (Kidney Failure)';
+      }
+      return { interpTitle: "🔬 CKD Stage (CKD-EPI 2021)", interpretation: stage ? `Calculated eGFR is ${egfr} mL/min/1.73m². This corresponds to CKD Stage: ${stage}.` : null, rows: [
+          {g:'Core', p:'Serum Creatinine', val:v.creat, unit:'mg/dL', ref:refs.creat}, {g:'Core', p:'eGFR', val:egfr, unit:'mL/min', ref:refs.egfr},
+          {g:'Nitrogen', p:'BUN', val:v.bun, unit:'mg/dL', ref:refs.bun}, {g:'Nitrogen', p:'Blood Urea', val:urea, unit:'mg/dL', ref:[15,43]}, {g:'Nitrogen', p:'BUN/Creat Ratio', val:buncratio, unit:'', ref:refs.buncratio},
+          {g:'Minerals', p:'Uric Acid', val:v.uricac, unit:'mg/dL', ref:refs.uricac}, {g:'Electrolytes', p:'Sodium', val:v.sodium, unit:'mEq/L', ref:refs.sodium}, {g:'Electrolytes', p:'Potassium', val:v.potass, unit:'mEq/L', ref:refs.potass},
+      ]};
+    }
+  },
+
+  // ==========================================
+  // LIPID
+  // ==========================================
+  lipid: {
+    title: 'Lipid Profile', desc: 'Auto-calculates LDL (Friedewald), VLDL, Non-HDL and Risk Ratios.', 
+    formulas: '<strong>LDL (Friedewald)</strong> = TC − HDL − (TG ÷ 5) | <strong>VLDL</strong> = TG ÷ 5 | <strong>Non-HDL</strong> = TC − HDL | <strong>TC/HDL Ratio</strong> = TC ÷ HDL',
+    patient: ['gender'],
+    sections:[
+      { label:'Direct Values', advanced: false, fields:[
+        {id:'tc', label:'Total Cholesterol', unit:'mg/dL', ph:'200', req:true, max: 2000},
+        {id:'hdl', label:'HDL Cholesterol', unit:'mg/dL', ph:'50', req:true, max: 200},
+        {id:'tg', label:'Triglycerides', unit:'mg/dL', ph:'150', req:true, max: 5000},
+      ]},
+    ],
+    refs: (g) => ({ tc:[0,200], hdl:g==='male'?[40,150]:[50,150], tg:[0,150], ldl:[0,100], vldl:[2,30], nonhdl:[0,130], tcratio:[0,5] }),
+    compute: (v, refs) => {
+      const tgInvalid = v.tg && v.tg > 400;
+      const vldl = v.tg ? +(v.tg/5).toFixed(1) : null;
+      const ldl = (!tgInvalid&&v.tc&&v.hdl&&v.tg) ? +(v.tc-v.hdl-(v.tg/5)).toFixed(1) : null;
+      const nonhdl = (v.tc&&v.hdl) ? +(v.tc-v.hdl).toFixed(1) : null;
+      const tcratio = (v.tc&&v.hdl&&v.hdl>0) ? +(v.tc/v.hdl).toFixed(2) : null;
+      
+      let interp = "";
+      if(tgInvalid) interp = "⚠️ Triglycerides > 400 mg/dL. Friedewald equation for LDL is invalid.";
+      else if(tcratio) interp = `TC/HDL Ratio is ${tcratio}. ` + (tcratio>5 ? "Indicates increased cardiovascular risk." : "Optimal cardiovascular risk ratio.");
+
+      return { interpTitle: "🔬 Cardiac Risk Interpretation", interpretation: interp, rows: [
+          {g:'Direct', p:'Total Cholesterol', val:v.tc, unit:'mg/dL', ref:refs.tc}, {g:'Direct', p:'HDL', val:v.hdl, unit:'mg/dL', ref:refs.hdl}, {g:'Direct', p:'Triglycerides', val:v.tg, unit:'mg/dL', ref:refs.tg},
+          {g:'Calculated', p:'LDL (Friedewald)', val:ldl, unit:'mg/dL', ref:refs.ldl}, {g:'Calculated', p:'VLDL', val:vldl, unit:'mg/dL', ref:refs.vldl}, {g:'Calculated', p:'Non-HDL', val:nonhdl, unit:'mg/dL', ref:refs.nonhdl}, {g:'Ratios', p:'TC / HDL Ratio', val:tcratio, unit:'', ref:refs.tcratio},
+      ]};
+    }
+  },
+
+  // ==========================================
+  // COAG
+  // ==========================================
+  coag: {
+    title: 'Coagulation — PT / INR', desc: 'Enter Patient and Control PT to calculate INR.', 
+    formulas: '<strong>PT Ratio</strong> = PT Pat ÷ PT Ctrl | <strong>INR</strong> = (PT Pat ÷ PT Ctrl)^ISI | <strong>APTT Ratio</strong> = APTT Pat ÷ APTT Ctrl',
+    patient: [],
+    sections:[
+      { label:'Prothrombin Time', advanced: false, fields:[
+        {id:'pt_pat', label:'PT Patient', unit:'sec', ph:'14', req:true, max: 200},
+        {id:'pt_ctrl', label:'PT Control', unit:'sec', ph:'12', req:true, max: 50},
+        {id:'isi', label:'ISI (from kit)', unit:'', ph:'e.g. 1.0', req:false, max: 3},
+      ]},
+      { label:'APTT', advanced: false, fields:[
+        {id:'aptt_pat', label:'APTT Patient', unit:'sec', ph:'32', req:false, max: 250},
+        {id:'aptt_ctrl', label:'APTT Control', unit:'sec', ph:'28', req:false, max: 50},
+      ]}
+    ],
+    refs: () => ({ pt_pat:[11,13.5], inr:[0.8,1.2], pt_ratio:[0.85,1.15], aptt_pat:[25,40], aptt_ratio:[0.8,1.2] }),
+    compute: (v, refs) => {
+      const isi = v.isi || 1.0;
+      const ptratio = (v.pt_pat&&v.pt_ctrl&&v.pt_ctrl>0) ? +(v.pt_pat/v.pt_ctrl).toFixed(3) : null;
+      const inr = ptratio ? +Math.pow(ptratio,isi).toFixed(2) : null;
+      const apttratio = (v.aptt_pat&&v.aptt_ctrl&&v.aptt_ctrl>0) ? +(v.aptt_pat/v.aptt_ctrl).toFixed(2) : null;
+      
+      let interp = null;
+      if(inr) {
+          if(inr<=1.2) interp = `INR is ${inr} (Normal, non-anticoagulated).`;
+          else if(inr<=2.0) interp = `INR is ${inr} (Mildly prolonged).`;
+          else if(inr<=3.0) interp = `INR is ${inr} (Therapeutic target for basic DVT/PE/AFib).`;
+          else if(inr<=4.5) interp = `INR is ${inr} (High therapeutic / Mechanical heart valve target).`;
+          else interp = `⚠️ INR is ${inr} (Critical - High bleeding risk).`;
+      }
+      return { interpTitle: "🔬 INR Interpretation", interpretation: interp, rows: [
+          {g:'Prothrombin', p:'PT Patient', val:v.pt_pat, unit:'sec', ref:refs.pt_pat}, {g:'Prothrombin', p:'PT Control', val:v.pt_ctrl, unit:'sec', ref:refs.pt_pat},
+          {g:'Calculated', p:'PT Ratio', val:ptratio, unit:'', ref:refs.pt_ratio}, {g:'Calculated', p:'INR', val:inr, unit:'', ref:refs.inr},
+          {g:'APTT', p:'APTT Patient', val:v.aptt_pat, unit:'sec', ref:refs.aptt_pat}, {g:'APTT', p:'APTT Control', val:v.aptt_ctrl, unit:'sec', ref:refs.aptt_pat}, {g:'Calculated', p:'APTT Ratio', val:apttratio, unit:'', ref:refs.aptt_ratio},
+      ]};
+    }
+  },
+
+  // ==========================================
+  // IRON STUDIES
+  // ==========================================
+  iron: {
+    title: 'Iron Studies', desc: 'Calculates Transferrin Saturation (TSAT).', 
+    formulas: '<strong>Transferrin Saturation (TSAT)</strong> = (Serum Iron ÷ TIBC) × 100',
+    patient: [],
+    sections:[
+      { label:'Iron Panel', advanced: false, fields:[
+        {id:'fe', label:'Serum Iron', unit:'µg/dL', ph:'e.g. 100', req:true, max: 1000},
+        {id:'tibc', label:'TIBC', unit:'µg/dL', ph:'e.g. 300', req:true, max: 1500},
+      ]}
+    ],
+    refs: () => ({ fe:[60,170], tibc:[240,450], tsat:[20,50] }),
+    compute: (v, refs) => {
+      const tsat = (v.fe&&v.tibc&&v.tibc>0) ? +(v.fe/v.tibc*100).toFixed(1) : null;
+      let interp = tsat ? `Transferrin Saturation is ${tsat}%. ` + (tsat<20?"Suggests iron deficiency.":tsat>50?"Suggests iron overload / hemochromatosis risk.":"Normal saturation.") : null;
+      return { interpTitle: "🔬 Iron Status", interpretation: interp, rows: [
+          {g:'Iron', p:'Serum Iron', val:v.fe, unit:'µg/dL', ref:refs.fe}, {g:'Iron', p:'TIBC', val:v.tibc, unit:'µg/dL', ref:refs.tibc}, {g:'Calculated', p:'Transferrin Saturation', val:tsat, unit:'%', ref:refs.tsat},
+      ]};
+    }
+  },
+
+  // ==========================================
+  // DIABETIC
+  // ==========================================
+  diab: {
+    title: 'Metabolic & Diabetic Panel', desc: 'Calculates eAG (Estimated Avg Glucose) and HOMA-IR.', 
+    formulas: '<strong>eAG</strong> = (28.7 × HbA1c) − 46.7 | <strong>HOMA-IR</strong> = (Fasting Glucose × Fasting Insulin) ÷ 405',
+    patient: [],
+    sections:[
+      { label:'Glucose & HbA1c', advanced: false, fields:[
+        {id:'glu', label:'Fasting Glucose', unit:'mg/dL', ph:'e.g. 95', req:false, max: 1500},
+        {id:'a1c', label:'HbA1c', unit:'%', ph:'e.g. 5.9', req:false, max: 25},
+      ]},
+      { label:'Insulin Resistance (Optional)', advanced: false, fields:[
+        {id:'ins', label:'Fasting Insulin', unit:'µU/mL', ph:'e.g. 10', req:false, max: 500},
+      ]}
+    ],
+    refs: () => ({ glu:[70,99], a1c:[4.0,5.6], eag:[70,126], ins:[2.6,24.9], homa:[0.5,1.9] }),
+    compute: (v, refs) => {
+      const eag = v.a1c ? +((28.7 * v.a1c) - 46.7).toFixed(1) : null;
+      const homa = (v.glu&&v.ins) ? +((v.glu * v.ins) / 405).toFixed(2) : null;
+      let interpParts = [];
+      if(v.a1c) interpParts.push(`HbA1c of ${v.a1c}% corresponds to ~${eag} mg/dL average glucose.`);
+      if(homa) interpParts.push(`HOMA-IR is ${homa} ` + (homa>2.9?"(Significant Insulin Resistance).":homa>1.9?"(Early Insulin Resistance).":"(Normal/Sensitive)."));
+      return { interpTitle: "🔬 Metabolic Interpretation", interpretation: interpParts.length > 0 ? interpParts.join(' ') : null, rows: [
+          {g:'Glycemic', p:'Fasting Glucose', val:v.glu, unit:'mg/dL', ref:refs.glu}, {g:'Glycemic', p:'HbA1c', val:v.a1c, unit:'%', ref:refs.a1c}, {g:'Calculated', p:'Est. Avg Glucose', val:eag, unit:'mg/dL', ref:refs.eag},
+          {g:'Insulin', p:'Fasting Insulin', val:v.ins, unit:'µU/mL', ref:refs.ins}, {g:'Calculated', p:'HOMA-IR Score', val:homa, unit:'', ref:refs.homa},
+      ]};
+    }
+  }
+};
+
+let currentTest = 'cbc';
+
+// Inline Input Validation
+function validateInput(input, maxVal) {
+    const val = parseFloat(input.value);
+    const errSpan = document.getElementById('err_' + input.id);
+    const calcBtn = document.getElementById('btn-calc');
+    
+    if (!isNaN(val) && val > maxVal) {
+        input.classList.add('error-field');
+        errSpan.textContent = `Limit exceeded! Max expected: ${maxVal}`;
+        errSpan.style.display = 'block';
+    } else {
+        input.classList.remove('error-field');
+        errSpan.style.display = 'none';
+    }
+    
+    // Disable Calculate button if any errors exist
+    calcBtn.disabled = document.querySelectorAll('.error-field').length > 0;
+}
+
+function buildPatientRow(fields) {
+  const row = document.getElementById('pat-row'); row.innerHTML = '';
+  if(!fields.length){row.style.display='none';return;}
+  row.style.display='grid';
+  if(fields.includes('gender')) row.innerHTML += `<div class="field"><label>Gender</label><select id="p_gender"><option value="male">Male</option><option value="female">Female</option></select></div>`;
+  if(fields.includes('age')) row.innerHTML += `<div class="field"><label>Age</label><input type="number" id="p_age" placeholder="e.g. 35"/></div>`;
+}
+
+function buildSections(sections) {
+  const cont = document.getElementById('field-sections'); cont.innerHTML = '';
+  
+  let basicHTML = '';
+  let advHTML = '';
+  
+  sections.forEach(sec => {
+    let html = `<div class="section-divider">${sec.label}</div><div class="input-grid">`;
+    html += sec.fields.map(f=>`
+        <div class="field">
+            <label>${f.req?'<span class="req-star">★</span>':''}${f.label}</label>
+            <input type="number" id="f_${f.id}" placeholder="${f.ph}" 
+                   class="${f.req?'required-field':''}" 
+                   ${f.max ? `oninput="validateInput(this, ${f.max})"` : ''}>
+            <span class="unit-hint">${f.unit}</span>
+            <span class="inline-error-text" id="err_f_${f.id}"></span>
+        </div>`).join('');
+    html += `</div>`;
+    
+    if(sec.advanced) advHTML += html;
+    else basicHTML += html;
+  });
+
+  if(advHTML !== '') {
+      cont.innerHTML = basicHTML + `
+          <button class="adv-toggle" onclick="this.nextElementSibling.classList.toggle('visible'); this.textContent = this.textContent.includes('Show') ? '⚙️ Hide Advanced Parameters' : '⚙️ Show Advanced Parameters';">⚙️ Show Advanced Parameters</button>
+          <div class="adv-container">${advHTML}</div>
+      `;
+  } else {
+      cont.innerHTML = basicHTML;
+  }
+}
+
+function switchTest(id, btn) {
+  currentTest = id;
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active')); btn.classList.add('active');
+  document.getElementById('test-title').textContent = TESTS[id].title;
+  document.getElementById('test-desc').textContent = TESTS[id].desc;
+  buildPatientRow(TESTS[id].patient); buildSections(TESTS[id].sections);
+  document.getElementById('results-card').style.display='none';
+  document.getElementById('interp-box').style.display='none';
+  document.getElementById('global-error').style.display='none';
+  document.getElementById('btn-copy').classList.remove('visible');
+  document.getElementById('btn-reset').classList.remove('visible');
+  document.getElementById('btn-calc').disabled = false;
+}
+
+function calculate() {
+  const def = TESTS[currentTest];
+  const g = document.getElementById('p_gender')?.value || 'male';
+  const a = document.getElementById('p_age')?.value;
+  const pat = { gender: g, age: a ? parseInt(a) : null };
+  const refs = def.refs ? def.refs(g) : {};
+  
+  const v = {};
+  const missing = [];
+  
+  // Clear previous global errors
+  document.getElementById('global-error').style.display='none';
+
+  def.sections.forEach(sec => sec.fields.forEach(f => {
+    const el = document.getElementById('f_'+f.id);
+    if (!el) return;
+    const val = el.value;
+    
+    if (val === '' || val === undefined) {
+        v[f.id] = null;
+        if(f.req) missing.push(f.label);
+    } else {
+        v[f.id] = parseFloat(val);
+    }
+  }));
+
+  if (missing.length > 0) {
+      const msgBox = document.getElementById('global-error');
+      msgBox.innerHTML = '<strong>Required Fields Missing:</strong> Please fill in: ' + missing.join(', ');
+      msgBox.style.display = 'block';
+      return;
+  }
+
+  const data = def.compute(v, refs, pat);
+  
+  if(data.interpretation) {
+      document.getElementById('interp-title').innerHTML = data.interpTitle || "🔬 Interpretation";
+      document.getElementById('interp-text').textContent = data.interpretation;
+      document.getElementById('interp-box').style.display = 'block';
+  } else {
+      document.getElementById('interp-box').style.display = 'none';
+  }
+
+  const tbody = document.getElementById('res-body'); tbody.innerHTML='';
+  let grp='';
+  
+  data.rows.forEach(row => {
+    if(row.val===null) return;
+    if(row.g!==grp){ grp=row.g; tbody.innerHTML+=`<tr class="group-row"><td colspan="5">${row.g}</td></tr>`; }
+    
+    let flag = 'NORMAL', fClass = 'normal';
+    let gaugeHTML = '';
+    
+    if(row.ref) {
+        const [lo, hi] = row.ref;
+        if(row.val < lo) { flag = 'LOW'; fClass = 'low'; }
+        if(row.val > hi) { flag = 'HIGH'; fClass = 'high'; }
+        
+        let pos = ((row.val - lo) / (hi - lo)) * 100;
+        pos = Math.max(0, Math.min(100, pos));
+        gaugeHTML = `<div class="gauge-container"><div class="gauge-marker ${fClass}" style="left: ${pos}%;"></div></div>`;
+    }
+
+    tbody.innerHTML+=`<tr>
+      <td>${row.p}</td>
+      <td><span class="pval ${fClass}">${row.val}</span>${gaugeHTML}</td>
+      <td>${row.unit}</td>
+      <td>${row.ref?`${row.ref[0]} - ${row.ref[1]}`:'-'}</td>
+      <td><span class="flag ${fClass}">${flag}</span></td>
+    </tr>`;
+  });
+
+  // Handle Formulas display
+  const fBox = document.getElementById('formula-section');
+  const fContent = document.getElementById('formula-content');
+  if(def.formulas) {
+      fContent.innerHTML = def.formulas.split('|').join('<br><br>');
+      fContent.classList.remove('visible'); // Reset state so it starts hidden
+      fBox.style.display = 'block';
+  } else {
+      fBox.style.display = 'none';
+  }
+
+  document.getElementById('results-card').style.display='block';
+  document.getElementById('btn-copy').classList.add('visible');
+  document.getElementById('btn-reset').classList.add('visible');
+  document.getElementById('results-card').scrollIntoView({behavior:'smooth'});
+}
+
+function resetAll() {
+  document.querySelectorAll('input').forEach(el=>{
+      el.value=''; 
+      el.classList.remove('error-field');
+  });
+  document.querySelectorAll('.inline-error-text').forEach(el => el.style.display='none');
+  document.getElementById('btn-calc').disabled = false;
+  document.getElementById('results-card').style.display='none';
+  document.getElementById('interp-box').style.display='none';
+  document.getElementById('global-error').style.display='none';
+  window.scrollTo(0,0);
+}
+
+function copyResults() {
+  const rows = document.querySelectorAll('#res-body tr:not(.group-row)');
+  let out = `DiagCalc Pro - ${TESTS[currentTest].title}\n`;
+  out += '─'.repeat(40)+'\n';
+  rows.forEach(r=>{
+    const c=r.querySelectorAll('td');
+    if(c.length>=5) out+=`${c[0].innerText.padEnd(25)} ${c[1].innerText.padEnd(8)} ${c[2].innerText} \t[${c[4].innerText}]\n`;
+  });
+  navigator.clipboard.writeText(out).then(()=>{
+    const btn=document.getElementById('btn-copy'); btn.textContent='✓ Copied!';
+    setTimeout(()=>btn.textContent='📋 Copy',2000);
+  });
+}
+
+// Init
+switchTest('cbc', document.querySelector('.tab'));
+</script>
+</body>
+</html>
