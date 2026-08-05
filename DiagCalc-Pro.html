@@ -1,0 +1,1125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>DiagCalc Pro — Clinical Laboratory Assistant</title>
+<style>
+:root {
+  --bg: #f4f7f9; --surface: #ffffff; --surface2: #f8fafc; --border: #e2e8f0;
+  --accent: #0284c7; --text: #0f172a; --muted: #64748b; --label: #475569;
+  --required: #ef4444; --radius: 8px;
+  --success: #059669; --success-bg: #d1fae5;
+  --warn: #d97706; --warn-bg: #fef3c7;
+  --danger: #dc2626; --danger-bg: #fee2e2;
+  --info: #0284c7; --info-bg: #e0f2fe;
+}
+[data-theme="dark"] {
+  --bg: #0f172a; --surface: #1e293b; --surface2: #334155; --border: #475569;
+  --accent: #38bdf8; --text: #f8fafc; --muted: #94a3b8; --label: #cbd5e1;
+  --success: #34d399; --success-bg: rgba(16, 185, 129, 0.15);
+  --warn: #fbbf24; --warn-bg: rgba(245, 158, 11, 0.15);
+  --danger: #f87171; --danger-bg: rgba(239, 68, 68, 0.15);
+  --info: #38bdf8; --info-bg: rgba(14, 165, 233, 0.15);
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body { background: var(--bg); color: var(--text); font-family: system-ui, -apple-system, sans-serif; min-height: 100vh; font-size: 15px; line-height: 1.5; transition: background-color 0.3s, color 0.3s; }
+
+header { position: sticky; top: 0; z-index: 200; background: var(--surface); border-bottom: 1px solid var(--border); padding: 16px 24px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+.logo { font-weight: 800; font-size: 1.25rem; color: var(--accent); }
+.logo span { color: var(--text); }
+.theme-btn { background: var(--surface2); border: 1px solid var(--border); padding: 6px 12px; border-radius: 20px; cursor: pointer; color: var(--text); font-weight: 600; font-size: 0.8rem;}
+
+.wrap { max-width: 1000px; margin: 0 auto; padding: 24px 16px 120px; }
+
+.tabs-container { overflow-x: auto; margin-bottom: 24px; padding-bottom: 8px; -webkit-overflow-scrolling: touch; }
+.tabs { display: flex; gap: 8px; flex-wrap: nowrap; min-width: min-content; }
+.tab { flex: 0 0 auto; min-width: 100px; padding: 10px 8px; background: var(--surface); border: 1px solid var(--border); color: var(--text); font-weight: 600; font-size: 0.85rem; cursor: pointer; border-radius: var(--radius); text-align: center; }
+.tab.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+.tab.util-tab { border-color: var(--info); color: var(--info); }
+.tab.util-tab.active { background: var(--info); color: #fff; }
+.tab small { display: block; font-size: 0.65rem; font-weight: 400; opacity: 0.9; margin-top: 2px; }
+
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 20px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); display: none; }
+.card.visible { display: block; }
+.card-head { padding: 20px 24px; border-bottom: 1px solid var(--border); background: var(--surface2); }
+.card-head h2 { font-size: 1.25rem; color: var(--text); }
+.card-desc { font-size: 0.85rem; color: var(--muted); margin-top: 4px; }
+.card-body { padding: 24px; }
+
+.pat-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 16px; margin-bottom: 24px; background: var(--surface2); padding: 16px; border-radius: var(--radius); border: 1px solid var(--border); }
+.input-grid { display: grid; grid-template-columns: repeat(1, 1fr); gap: 16px; }
+@media(min-width: 768px) { .input-grid { grid-template-columns: repeat(3, 1fr); gap: 24px; } .card-body { padding: 32px; } }
+
+.field { display: flex; flex-direction: column; gap: 6px; position: relative; }
+.field label { font-size: 0.85rem; color: var(--label); font-weight: 600; }
+.req-star { color: var(--required); }
+.field input, .field select, .field textarea { background: var(--surface); border: 1px solid var(--border); color: var(--text); font-size: 1rem; padding: 10px 12px; border-radius: 6px; outline: none; width: 100%; transition: 0.2s; font-family: inherit; }
+.field input:focus, .field select:focus, .field textarea:focus { border-color: var(--accent); box-shadow: 0 0 0 2px rgba(2, 132, 199, 0.2); }
+.field input.required-field { border-left: 3px solid var(--required); }
+.field input.error-field { border-color: var(--danger) !important; background: var(--danger-bg); border-left: 3px solid var(--danger); }
+.unit-hint { font-size: 0.75rem; color: var(--muted); }
+.inline-error-text { display: none; color: var(--danger); font-size: 0.75rem; font-weight: 600; margin-top: -2px; }
+
+.section-divider { font-size: 0.85rem; font-weight: 700; text-transform: uppercase; color: var(--accent); padding: 16px 0 8px; margin-top: 12px; border-bottom: 2px solid var(--surface2); margin-bottom: 16px; grid-column: 1 / -1; }
+
+.adv-toggle { background: var(--surface2); color: var(--text); border: 1px solid var(--border); padding: 10px 16px; border-radius: 6px; font-weight: 600; cursor: pointer; width: 100%; margin: 24px 0 16px; }
+.adv-container { display: none; padding: 16px; background: var(--bg); border: 1px dashed var(--border); border-radius: var(--radius); }
+.adv-container.visible { display: block; animation: fadeIn 0.3s; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(-5px); } to { opacity: 1; transform: translateY(0); } }
+
+.panic-banner { display: none; background: var(--danger); color: white; padding: 16px 24px; border-radius: var(--radius); margin-bottom: 16px; font-weight: 600; box-shadow: 0 4px 12px rgba(220, 38, 38, 0.3); animation: pulse-bg 2s infinite; }
+@keyframes pulse-bg { 0% { opacity: 1; } 50% { opacity: 0.85; } 100% { opacity: 1; } }
+.global-error { color: var(--danger); font-size: 0.95rem; font-weight: 600; padding: 12px; background: var(--danger-bg); border-radius: 6px; border: 1px solid #fca5a5; display: none; margin-top: 16px; }
+
+.interp-box { display: none; background: var(--info-bg); border: 1px solid var(--info); border-radius: var(--radius); padding: 16px; margin-bottom: 16px; color: var(--text); }
+.interp-box h4 { color: var(--info); margin-bottom: 6px; font-size: 0.95rem; font-weight: 700;}
+
+.results-card { display: none; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; margin-bottom: 16px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
+.results-card.visible { display: block; }
+.results-head { padding: 16px 24px; background: var(--surface2); border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+
+table { width: 100%; border-collapse: collapse; text-align: left; }
+th { font-size: 0.75rem; text-transform: uppercase; color: var(--muted); padding: 12px 16px; border-bottom: 2px solid var(--border); }
+td { padding: 12px 16px; font-size: 0.9rem; border-bottom: 1px solid var(--border); vertical-align: middle; }
+tr.group-row td { background: var(--surface2); font-size: 0.75rem; font-weight: 700; text-transform: uppercase; color: var(--label); }
+.pval { font-weight: 700; }
+
+.gauge-container { width: 100px; height: 6px; background: var(--border); border-radius: 3px; position: relative; margin-top: 4px; overflow: hidden;}
+.gauge-marker { position: absolute; height: 100%; width: 4px; background: var(--text); border-radius: 2px; transform: translateX(-50%); }
+.gauge-marker.high, .gauge-marker.low, .gauge-marker.critical { background: var(--danger); }
+.flag { display: inline-block; padding: 4px 8px; border-radius: 4px; font-size: 0.7rem; font-weight: 700; text-transform: uppercase; }
+.flag.normal { background: var(--success-bg); color: var(--success); }
+.flag.high, .flag.critical, .flag.reject { background: var(--danger-bg); color: var(--danger); }
+.flag.low, .flag.warning { background: var(--warn-bg); color: var(--warn); }
+.flag.info { background: var(--info-bg); color: var(--info); }
+.summary { padding: 16px 24px; background: var(--surface2); display: flex; gap: 24px; flex-wrap: wrap; }
+.sum-item .sv { font-size: 1.25rem; font-weight: 800; }
+.sum-item .sl { font-size: 0.7rem; color: var(--muted); text-transform: uppercase; display: block;}
+
+.formula-section { padding: 16px 24px; background: var(--surface); border-top: 1px solid var(--border); }
+.formula-toggle { background: transparent; border: none; color: var(--muted); font-weight: 600; cursor: pointer; display: flex; align-items: center; font-size: 0.85rem; padding: 0; }
+.formula-content { display: none; padding: 16px; background: var(--surface2); border-radius: var(--radius); margin-top: 12px; font-size: 0.85rem; border: 1px dashed var(--border); }
+.formula-content.visible { display: block; animation: fadeIn 0.3s; }
+.formula-content strong { color: var(--accent); }
+
+.sticky-bottom { position: fixed; bottom: 0; left: 0; right: 0; background: var(--surface); padding: 12px 24px; border-top: 1px solid var(--border); box-shadow: 0 -4px 10px rgba(0,0,0,0.05); display: flex; gap: 12px; z-index: 100; justify-content: center; }
+.calc-btn, .act-btn { padding: 12px 20px; font-weight: 700; border-radius: 8px; cursor: pointer; border: none; font-size: 0.95rem; flex: 1; max-width: 300px; }
+.calc-btn { background: var(--accent); color: white; }
+.act-btn { background: var(--surface2); color: var(--text); border: 1px solid var(--border); display: none; }
+.act-btn.visible { display: block; }
+
+.conv-row { display: grid; grid-template-columns: 1fr auto 1fr; gap: 12px; align-items: center; margin-bottom: 12px; }
+.conv-note { font-size: 0.7rem; color: var(--muted); margin-top: -8px; margin-bottom: 12px; }
+.pre-anal-search { width: 100%; padding: 12px; font-size: 1rem; border: 2px solid var(--accent); border-radius: var(--radius); font-family: inherit; background: var(--surface); color: var(--text); }
+.pa-hint { font-size: 0.75rem; color: var(--muted); margin: 8px 0 16px; }
+.tube-badge { display: inline-block; padding: 4px 10px; border-radius: 12px; font-size: 0.75rem; font-weight: bold; color: white; text-shadow: 1px 1px 1px rgba(0,0,0,0.3); border: 1px solid rgba(0,0,0,0.1); }
+.tube-icon { display:inline-block; width:12px; height:20px; border-radius:2px 2px 5px 5px; vertical-align:middle; margin-right:8px; border:1px solid rgba(0,0,0,0.25); }
+.canvas-wrapper { width: 100%; overflow-x: auto; background: var(--surface); border-bottom: 1px solid var(--border); padding: 16px 0; }
+canvas { display: block; margin: 0 auto; max-width: 100%; background: var(--surface); }
+@media(max-width: 600px) { th:nth-child(4), td:nth-child(4) { display: none; } }
+
+.pa-noresult { padding: 20px; text-align: center; color: var(--muted); background: var(--surface2); border-radius: var(--radius); margin-top: 12px; display:none; }
+.pa-noresult .didmean { margin-top: 10px; }
+.pa-chip { display: inline-block; background: var(--surface); border: 1px solid var(--border); padding: 5px 12px; border-radius: 14px; margin: 3px; cursor: pointer; font-size: 0.8rem; color: var(--text); }
+.pa-chip:hover { border-color: var(--accent); color: var(--accent); }
+.pa-detail-card { background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; margin-top: 12px; }
+.pa-detail-card h3 { color: var(--accent); margin-bottom: 14px; display: flex; align-items: center; font-size: 1.1rem; }
+.pa-detail-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 14px; }
+.pa-detail-item .pdl { font-size: 0.7rem; text-transform: uppercase; color: var(--muted); font-weight: 700; margin-bottom: 3px; letter-spacing: 0.03em; }
+.pa-detail-item .pdv { font-size: 0.92rem; }
+.pa-back { background: none; border: none; color: var(--accent); font-weight: 600; cursor: pointer; font-size: 0.85rem; margin-top: 14px; padding: 0; }
+.pa-item { cursor: pointer; }
+.pa-item:hover td { background: var(--surface2); }
+
+.dropzone { border: 2px dashed var(--border); border-radius: var(--radius); padding: 36px 16px; text-align: center; cursor: pointer; color: var(--muted); font-weight: 600; }
+.dropzone.drag { border-color: var(--accent); color: var(--accent); background: var(--info-bg); }
+.pdf-status { margin-top: 14px; font-size: 0.85rem; color: var(--muted); }
+.extract-table td, .extract-table th { font-size: 0.85rem; }
+.push-select { padding: 10px 12px; border-radius: 6px; border: 1px solid var(--border); background: var(--surface); color: var(--text); font-size: 0.9rem; flex: 1; min-width: 160px; }
+.pdf-note { font-size: 0.75rem; color: var(--muted); margin-top: 4px; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">Diag<span>Calc</span> Pro</div>
+  <button class="theme-btn" onclick="toggleTheme()">🌙 Dark Mode</button>
+</header>
+
+<div class="wrap">
+  <div class="tabs-container">
+      <div class="tabs">
+        <button class="tab active" data-id="cbc" onclick="switchTest('cbc',this)">CBC<small>Blood Count</small></button>
+        <button class="tab" data-id="lft" onclick="switchTest('lft',this)">LFT<small>Liver</small></button>
+        <button class="tab" data-id="rft" onclick="switchTest('rft',this)">Biochem/RFT<small>Electrolytes</small></button>
+        <button class="tab" data-id="lipid" onclick="switchTest('lipid',this)">Lipid<small>Profile</small></button>
+        <button class="tab" data-id="diab" onclick="switchTest('diab',this)">Diabetic<small>Metabolic</small></button>
+        <button class="tab" data-id="urine" onclick="switchTest('urine',this)">Urine<small>UACR & PCR</small></button>
+        <button class="tab" data-id="coag" onclick="switchTest('coag',this)">Coag<small>PT / APTT</small></button>
+        <button class="tab" data-id="iron" onclick="switchTest('iron',this)">Iron<small>Studies</small></button>
+        <button class="tab util-tab" data-id="converter" onclick="switchTest('converter',this)">Converter<small>Units ↔ SI</small></button>
+        <button class="tab util-tab" data-id="preanal" onclick="switchTest('preanal',this)">Pre-Analytical<small>Tubes & Vols</small></button>
+        <button class="tab util-tab" data-id="reagent" onclick="switchTest('reagent',this)">Reagents<small>Mix & Dilute</small></button>
+        <button class="tab util-tab" data-id="qc" onclick="switchTest('qc',this)">QC Tracker<small>Westgard</small></button>
+        <button class="tab util-tab" data-id="pdfimport" onclick="switchTest('pdfimport',this)">PDF Import<small>Analyzer Report</small></button>
+      </div>
+  </div>
+
+  <div class="card visible" id="patient-card">
+    <div class="card-head">
+      <h2 id="test-title">Title</h2>
+      <div class="card-desc" id="test-desc">Desc</div>
+    </div>
+    <div class="card-body">
+      <div class="pat-row" id="pat-row"></div>
+      <div id="field-sections"></div>
+      <div class="global-error" id="global-error"></div>
+    </div>
+  </div>
+
+  <div class="card" id="qc-card">
+    <div class="card-head"><h2>Quality Control (QC) Tracker</h2><div class="card-desc">Evaluate a control run against Westgard multi-rules (1-3s, 2-2s, R-4s, 4-1s, 10x).</div></div>
+    <div class="card-body">
+      <div class="input-grid">
+        <div class="field"><label>Target Mean (Optional)</label><input type="number" id="qc_mean" inputmode="decimal" placeholder="Leave blank to auto-calculate"></div>
+        <div class="field"><label>Target 1SD (Optional)</label><input type="number" id="qc_sd" inputmode="decimal" placeholder="Leave blank to auto-calculate"></div>
+        <div class="field" style="grid-column: 1 / -1;"><label><span class="req-star">★</span> QC Data Points (Current Run/History)</label><textarea id="qc_data" rows="3" placeholder="Enter values separated by commas, e.g. 98,101,99,102,97"></textarea></div>
+      </div>
+      <div class="global-error" id="qc-error"></div>
+    </div>
+  </div>
+
+  <div class="card" id="conv-card">
+    <div class="card-head"><h2>Unit Converter</h2><div class="card-desc">Bi-directional conversion between Conventional and SI Units.</div></div>
+    <div class="card-body" id="conv-body"></div>
+  </div>
+
+  <div class="card" id="preanal-card">
+    <div class="card-head"><h2>Pre-Analytical Guide</h2><div class="card-desc">Sample collection requirements, tube colors, stability, and rejection criteria.</div></div>
+    <div class="card-body">
+        <input type="text" class="pre-anal-search" id="pa-search" placeholder="Search test, abbreviation, or tube color…" onkeyup="filterPA()" autocomplete="off">
+        <div class="pa-hint">Search by: test name • abbreviation (FBS, KFT, RFT) • machine panel • tube color (e.g. "purple")</div>
+        <div id="pa-noresult"></div>
+        <div id="pa-detail"></div>
+        <div id="pa-table-wrap" style="overflow-x:auto; display:none;">
+            <table id="pa-table">
+                <thead><tr><th>Test</th><th>Tube</th><th>Vol</th><th>TAT</th></tr></thead>
+                <tbody id="pa-body"></tbody>
+            </table>
+        </div>
+    </div>
+  </div>
+
+  <div class="card" id="pdfimport-card">
+    <div class="card-head"><h2>Analyzer PDF Import</h2><div class="card-desc">Upload a text-based PDF report from your analyzer to auto-extract values and push them into the matching calculator.</div></div>
+    <div class="card-body">
+      <div class="dropzone" id="pdf-drop" onclick="document.getElementById('pdf-file').click()">
+        📄 Tap to select analyzer PDF report
+        <input type="file" id="pdf-file" accept="application/pdf" style="display:none" onchange="handlePdfFile(this.files[0])">
+      </div>
+      <div class="pdf-note">Works with text-based PDF exports from analyzer software. Scanned/photographed reports (image-only PDFs) can't be read this way.</div>
+      <div class="pdf-status" id="pdf-status"></div>
+      <div id="pdf-extract-wrap" style="display:none; margin-top:16px;">
+        <h4 style="margin-bottom:8px;">Detected Values <span style="font-weight:400;color:var(--muted);font-size:0.8rem;">— verify against the original report before use</span></h4>
+        <div style="overflow-x:auto;"><table class="extract-table"><thead><tr><th>Detected Parameter</th><th>Value</th><th>Matched Field</th></tr></thead><tbody id="pdf-extract-body"></tbody></table></div>
+        <div style="margin-top:16px; display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
+          <label style="font-size:0.85rem; font-weight:600;">Send to:</label>
+          <select class="push-select" id="pdf-target-test"></select>
+          <button class="act-btn visible" style="max-width:220px;" onclick="pushPdfToCalculator()">⚡ Apply to Calculator</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="panic-banner" id="panic-banner"></div>
+
+  <div class="interp-box" id="interp-box">
+    <h4 id="interp-title">🔬 Interpretation</h4>
+    <p id="interp-text"></p>
+  </div>
+
+  <div class="results-card" id="results-card">
+    <div class="results-head"><h3 id="res-title">Laboratory Results</h3></div>
+    <div style="overflow-x:auto;">
+      <table><thead><tr><th>Parameter</th><th>Result</th><th>Unit</th><th>Reference</th><th>Flag</th></tr></thead>
+      <tbody id="res-body"></tbody></table>
+    </div>
+    <div class="formula-section" id="formula-section" style="display:none;">
+      <button class="formula-toggle" onclick="document.getElementById('formula-content').classList.toggle('visible')">📐 View Formulas</button>
+      <div class="formula-content" id="formula-content"></div>
+    </div>
+  </div>
+
+  <div class="results-card" id="qc-results-card">
+    <div class="results-head"><h3>Levey-Jennings Chart & Analysis</h3></div>
+    <div class="summary" id="qc-summary" style="background: var(--surface);"></div>
+    <div class="canvas-wrapper"><canvas id="ljChart" width="800" height="350"></canvas></div>
+    <div style="overflow-x:auto;">
+      <table><thead><tr><th>Run #</th><th>Value</th><th>Z-Score</th><th>Status</th></tr></thead><tbody id="qc-res-body"></tbody></table>
+    </div>
+  </div>
+</div>
+
+<div class="sticky-bottom">
+    <button class="act-btn" id="btn-reset" onclick="resetAll()">↺ Reset</button>
+    <button class="calc-btn" id="btn-calc" onclick="triggerCalculate()">⚡ Calculate / Next</button>
+    <button class="act-btn" id="btn-copy" onclick="copyResults()">📋 MS Word</button>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script>
+if (window.pdfjsLib) { pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js'; }
+
+let currentTest = 'cbc';
+let currentMode = 'patient';
+
+function toggleTheme() {
+  const body = document.body;
+  const isDark = body.getAttribute('data-theme') === 'dark';
+  body.setAttribute('data-theme', isDark ? 'light' : 'dark');
+  if(currentMode === 'qc' && document.getElementById('qc-results-card').classList.contains('visible')) calculateQC();
+}
+
+document.addEventListener('keypress', function (e) {
+    if (e.key === 'Enter') {
+        const active = document.activeElement;
+        if (active.tagName === 'INPUT' && active.id !== 'pa-search' && active.type !== 'text') {
+            e.preventDefault();
+            const activeCard = document.querySelector('.card.visible');
+            const inputs = Array.from(activeCard.querySelectorAll('input:not([type="hidden"])'));
+            const idx = inputs.indexOf(active);
+            if (idx > -1 && idx < inputs.length - 1) { inputs[idx + 1].focus(); }
+            else if (idx === inputs.length - 1) { active.blur(); if(!document.getElementById('btn-calc').disabled) triggerCalculate(); }
+        }
+    }
+});
+
+function triggerCalculate() {
+    if(currentMode === 'patient') calculatePatient();
+    else if(currentMode === 'qc') calculateQC();
+}
+
+const TESTS = {
+  cbc: {
+    title: 'CBC — Complete Blood Count', desc: 'Auto indices, Mentzer Index, and predictive PBS morphology.',
+    formulas: '<strong>MCV</strong> = (HCT ÷ RBC) × 10 | <strong>MCH</strong> = (Hb ÷ RBC) × 10 | <strong>MCHC</strong> = (Hb ÷ HCT) × 100 | <strong>Mentzer Index</strong> = MCV ÷ RBC',
+    patient: ['gender','age'],
+    sections:[
+      { label:'RBC Series', advanced: false, fields:[
+        {id:'hb', label:'Hemoglobin', unit:'g/dL', ph:'e.g. 13.5', req:true, max: 30},
+        {id:'rbc', label:'RBC Count', unit:'×10⁶/µL', ph:'e.g. 4.5', req:true, max: 15},
+        {id:'hct', label:'Hematocrit / PCV', unit:'%', ph:'e.g. 42', req:true, max: 80},
+      ]},
+      { label:'WBC / Differential', advanced: false, fields:[
+        {id:'wbc', label:'WBC (TLC)', unit:'×10³/µL', ph:'e.g. 7.5', req:true, max: 300},
+        {id:'neut', label:'Neutrophils', unit:'%', ph:'60', req:false, max: 100},
+        {id:'lymph', label:'Lymphocytes', unit:'%', ph:'30', req:false, max: 100},
+        {id:'mono', label:'Monocytes', unit:'%', ph:'5', req:false, max: 100},
+      ]},
+      { label:'Platelets', advanced: false, fields:[
+        {id:'plt', label:'Platelet Count', unit:'×10³/µL', ph:'250', req:true, max: 3000},
+      ]},
+      { label:'Advanced Indices', advanced: true, fields:[
+        {id:'rdwcv', label:'RDW-CV', unit:'%', ph:'13.0', req:false, max: 40},
+        {id:'mpv', label:'MPV', unit:'fL', ph:'9.5', req:false, max: 20},
+      ]}
+    ],
+    refs: (g) => {
+      const m = g==='male', c = g==='child';
+      return { hb: c?[11,14]:m?[13.5,17.5]:[12,15.5], rbc: c?[3.8,5.5]:m?[4.5,5.9]:[3.8,5.2], hct: c?[35,45]:m?[41,53]:[36,46], wbc: [4,11], neut:[40,70], lymph:[20,40], mono:[2,8], plt:[150,400], mcv: c?[70,86]:[80,100], mch:[27,33], mchc:[32,36], rdwcv: [11.5,14.5], mpv: [7.5,12.5], mentzer: [13, 999] };
+    },
+    compute: (v, refs) => {
+      const mcv = (v.hct&&v.rbc) ? +((v.hct/v.rbc)*10).toFixed(1) : null; const mch = (v.hb&&v.rbc) ? +((v.hb/v.rbc)*10).toFixed(1) : null; const mchc = (v.hb&&v.hct) ? +((v.hb/v.hct)*100).toFixed(1) : null; const mentzer = (mcv&&v.rbc) ? +(mcv/v.rbc).toFixed(1) : null;
+      let pbs = [];
+      if(mcv) { if (mcv < 80) pbs.push("Microcytic"); else if (mcv > 100) pbs.push("Macrocytic"); else pbs.push("Normocytic"); }
+      if(mch && mchc) { if (mch < 27 || mchc < 32) pbs.push("Hypochromic"); else pbs.push("Normochromic"); }
+      let interp = pbs.length > 0 ? "Smear Est: RBCs appear " + pbs.slice(0,2).join(", ") + ". " : null;
+      if(mentzer) interp = (interp || "") + (mentzer < 13 ? " Mentzer < 13 suggests Thalassemia Trait." : " Mentzer > 13 suggests Iron Deficiency.");
+      return { interpTitle: "🔬 Hematology Interpretation", interpretation: interp, rows: [
+          {g:'RBC Series', p:'Hemoglobin', val:v.hb, unit:'g/dL', ref:refs.hb, panic: [7, 20]}, {g:'RBC Series', p:'RBC Count', val:v.rbc, unit:'×10⁶/µL', ref:refs.rbc}, {g:'RBC Series', p:'Hematocrit', val:v.hct, unit:'%', ref:refs.hct},
+          {g:'Indices', p:'MCV', val:mcv, unit:'fL', ref:refs.mcv}, {g:'Indices', p:'MCH', val:mch, unit:'pg', ref:refs.mch}, {g:'Indices', p:'MCHC', val:mchc, unit:'g/dL', ref:refs.mchc}, {g:'Indices', p:'Mentzer Index', val:mentzer, unit:'', ref:refs.mentzer},
+          {g:'WBC', p:'WBC Total', val:v.wbc, unit:'×10³/µL', ref:refs.wbc}, {g:'Platelets', p:'Platelet Count', val:v.plt, unit:'×10³/µL', ref:refs.plt, panic: [20, 1000]},
+      ]};
+    }
+  },
+
+  rft: {
+    title: 'Biochemistry / RFT / Electrolytes', desc: 'eGFR, BUN/Creat Ratio, Anion Gap, and Corrected Calcium.',
+    formulas: '<strong>eGFR</strong> = CKD-EPI 2021 Equation | <strong>Anion Gap</strong> = Na - (Cl + HCO3) | <strong>Corrected Calcium</strong> = Total Ca + 0.8 × (4.0 - Albumin)',
+    patient: ['gender','age'],
+    sections:[
+      { label:'Renal Function', advanced: false, fields:[
+        {id:'creat', label:'Serum Creatinine', unit:'mg/dL', ph:'0.9', req:true, max: 30},
+        {id:'bun', label:'BUN / Urea N.', unit:'mg/dL', ph:'14', req:false, max: 300},
+        {id:'uricac', label:'Uric Acid', unit:'mg/dL', ph:'5.5', req:false, max: 30},
+      ]},
+      { label:'Electrolytes & Minerals', advanced: false, fields:[
+        {id:'sodium', label:'Sodium (Na⁺)', unit:'mEq/L', ph:'140', req:false, max: 200},
+        {id:'potass', label:'Potassium (K⁺)', unit:'mEq/L', ph:'4.0', req:false, max: 15},
+        {id:'chlor', label:'Chloride (Cl⁻)', unit:'mEq/L', ph:'102', req:false, max: 150},
+        {id:'hco3', label:'Bicarbonate (HCO3)', unit:'mEq/L', ph:'24', req:false, max: 50},
+      ]},
+      { label:'Calcium Correction', advanced: false, fields:[
+        {id:'ca', label:'Total Calcium', unit:'mg/dL', ph:'9.0', req:false, max: 20},
+        {id:'alb', label:'Albumin', unit:'g/dL', ph:'3.5', req:false, max: 10},
+      ]}
+    ],
+    refs: (g) => ({ creat: g==='male'?[0.7,1.2]:[0.5,1.1], bun: [7,20], uricac: g==='male'?[3.4,7.0]:[2.4,6.0], sodium:[136,145], potass:[3.5,5.0], chlor:[98,107], hco3:[22,29], gap:[8,16], ca:[8.5,10.2], alb:[3.5,5.0], egfr: [60,999] }),
+    compute: (v, refs, pat) => {
+      const age = pat.age; const female = pat.gender==='female';
+      let egfr = null;
+      if(v.creat && age){
+        const k = female ? 0.7 : 0.9; const alpha = female ? -0.241 : -0.302;
+        egfr = +(142 * Math.pow(Math.min(v.creat/k,1),alpha) * Math.pow(Math.max(v.creat/k,1),-1.200) * Math.pow(0.9938,age) * (female?1.012:1)).toFixed(1);
+      }
+      const buncratio = (v.bun&&v.creat&&v.creat>0)?+(v.bun/v.creat).toFixed(1):null;
+      const agap = (v.sodium && v.chlor && v.hco3) ? +(v.sodium - (v.chlor + v.hco3)).toFixed(1) : null;
+      const corrca = (v.ca && v.alb) ? +(v.ca + 0.8 * (4.0 - v.alb)).toFixed(2) : null;
+      let stage = '';
+      if(egfr) {
+          if(egfr>=90) stage = 'G1 (Normal)'; else if(egfr>=60) stage = 'G2 (Mild)'; else if(egfr>=45) stage = 'G3a (Mild-Mod)'; else if(egfr>=30) stage = 'G3b (Mod-Severe)'; else if(egfr>=15) stage = 'G4 (Severe)'; else stage = 'G5 (Failure)';
+      }
+      return { interpTitle: "🔬 Biochemical Insights", interpretation: (stage ? `CKD Stage: ${stage}. ` : '') + (agap>16?"High Anion Gap suggests metabolic acidosis. ":"") + (corrca?"Note corrected calcium based on albumin levels.":""), rows: [
+          {g:'Renal', p:'Creatinine', val:v.creat, unit:'mg/dL', ref:refs.creat}, {g:'Renal', p:'eGFR', val:egfr, unit:'mL/min', ref:refs.egfr},
+          {g:'Renal', p:'BUN', val:v.bun, unit:'mg/dL', ref:refs.bun}, {g:'Renal', p:'BUN/Creat Ratio', val:buncratio, unit:'', ref:[10,20]},
+          {g:'Electrolytes', p:'Sodium', val:v.sodium, unit:'mEq/L', ref:refs.sodium, panic: [120, 160]}, {g:'Electrolytes', p:'Potassium', val:v.potass, unit:'mEq/L', ref:refs.potass, panic: [2.5, 6.0]}, {g:'Electrolytes', p:'Chloride', val:v.chlor, unit:'mEq/L', ref:refs.chlor}, {g:'Electrolytes', p:'Bicarbonate', val:v.hco3, unit:'mEq/L', ref:refs.hco3},
+          {g:'Calculated Gap', p:'Anion Gap', val:agap, unit:'mEq/L', ref:refs.gap},
+          {g:'Calcium', p:'Total Calcium', val:v.ca, unit:'mg/dL', ref:refs.ca, panic: [6.0, 13.0]}, {g:'Calcium', p:'Albumin', val:v.alb, unit:'g/dL', ref:refs.alb}, {g:'Calcium', p:'Corrected Calcium', val:corrca, unit:'mg/dL', ref:refs.ca},
+      ]};
+    }
+  },
+
+  urine: {
+    title: 'Urine Analysis', desc: 'Urine Albumin/Creatinine Ratio (UACR) and Protein/Creatinine.',
+    formulas: '<strong>UACR (mg/g)</strong> = (Urine Microalbumin ÷ Urine Creatinine) × 100 | <strong>PCR (mg/g)</strong> = (Urine Protein ÷ Urine Creatinine) × 100',
+    patient: [],
+    sections:[
+      { label:'Spot Urine Analytes', advanced: false, fields:[
+        {id:'u_creat', label:'Urine Creatinine', unit:'mg/dL', ph:'e.g. 100', req:true, max: 1000},
+        {id:'u_mca', label:'Urine Microalbumin', unit:'mg/L', ph:'e.g. 15', req:false, max: 1000},
+        {id:'u_prot', label:'Urine Total Protein', unit:'mg/dL', ph:'e.g. 20', req:false, max: 1000},
+      ]}
+    ],
+    refs: () => ({ u_mca:[0,20], u_creat:[20,275], uacr:[0,30], pcr:[0,200] }),
+    compute: (v, refs) => {
+      const uacr = (v.u_mca && v.u_creat) ? +(v.u_mca / (v.u_creat * 0.01)).toFixed(1) : null;
+      const pcr = (v.u_prot && v.u_creat) ? +(v.u_prot / (v.u_creat * 0.01)).toFixed(1) : null;
+      let interp = uacr ? (uacr < 30 ? "Normal UACR." : uacr < 300 ? "Microalbuminuria (A2). Indicates early kidney disease." : "Macroalbuminuria (A3).") : null;
+      return { interpTitle: "🔬 Nephrology Interpretation", interpretation: interp, rows: [
+          {g:'Raw Values', p:'Urine Creatinine', val:v.u_creat, unit:'mg/dL', ref:refs.u_creat}, {g:'Raw Values', p:'Urine Microalbumin', val:v.u_mca, unit:'mg/L', ref:refs.u_mca}, {g:'Raw Values', p:'Urine Protein', val:v.u_prot, unit:'mg/dL', ref:null},
+          {g:'Ratios', p:'UACR', val:uacr, unit:'mg/g Creat', ref:refs.uacr}, {g:'Ratios', p:'Protein/Creat Ratio', val:pcr, unit:'mg/g Creat', ref:refs.pcr},
+      ]};
+    }
+  },
+
+  lft: { title:'LFT — Liver Function Test', desc:'Bilirubin fractions, enzymes, and protein profile with AST/ALT ratio.',
+    formulas:'<strong>Indirect Bili</strong> = Total − Direct | <strong>AST/ALT Ratio</strong> = AST ÷ ALT | <strong>A/G Ratio</strong> = Albumin ÷ Globulin',
+    patient:[], sections:[
+      {label:'Bilirubin', advanced:false, fields:[
+        {id:'tbil',label:'Total Bilirubin',unit:'mg/dL',req:true,max:50},
+        {id:'dbil',label:'Direct Bilirubin',unit:'mg/dL',req:true,max:50}
+      ]},
+      {label:'Enzymes', advanced:false, fields:[
+        {id:'ast',label:'AST (SGOT)',unit:'U/L',req:true,max:5000},
+        {id:'alt',label:'ALT (SGPT)',unit:'U/L',req:true,max:5000},
+        {id:'alp',label:'ALP',unit:'U/L',req:false,max:2000},
+        {id:'ggt',label:'GGT',unit:'U/L',req:false,max:2000}
+      ]},
+      {label:'Protein', advanced:false, fields:[
+        {id:'tp',label:'Total Protein',unit:'g/dL',req:false,max:15},
+        {id:'lalb',label:'Albumin',unit:'g/dL',req:false,max:10}
+      ]}
+    ],
+    refs:()=>({tbil:[0.2,1.2],dbil:[0,0.3],ibil:[0,0.9],ast:[10,40],alt:[7,56],alp:[44,147],ggt:[9,48],tp:[6.4,8.3],lalb:[3.5,5.0],glob:[2.0,3.5],ag:[1.1,2.5]}),
+    compute:(v,refs)=>{
+      const ibil=+(v.tbil-v.dbil).toFixed(2);
+      const ratio=+(v.ast/v.alt).toFixed(2);
+      const glob=(v.tp&&v.lalb)?+(v.tp-v.lalb).toFixed(2):null;
+      const ag=(v.lalb&&glob)?+(v.lalb/glob).toFixed(2):null;
+      return {interpTitle:"🔬 Hepatic Interpretation", interpretation:`AST/ALT Ratio: ${ratio}. ${ratio>2?'Ratio >2 suggests an alcoholic liver disease pattern. ':''}${ag&&ag<1?'A/G ratio <1 may suggest chronic liver disease or nephrotic protein loss.':''}`, rows:[
+        {g:'Bilirubin',p:'Total',val:v.tbil,unit:'mg/dL',ref:refs.tbil},
+        {g:'Bilirubin',p:'Direct',val:v.dbil,unit:'mg/dL',ref:refs.dbil},
+        {g:'Bilirubin',p:'Indirect',val:ibil,unit:'mg/dL',ref:refs.ibil},
+        {g:'Enzymes',p:'AST',val:v.ast,unit:'U/L',ref:refs.ast},
+        {g:'Enzymes',p:'ALT',val:v.alt,unit:'U/L',ref:refs.alt},
+        {g:'Enzymes',p:'AST/ALT Ratio',val:ratio,unit:'',ref:[0.7,1.2]},
+        {g:'Enzymes',p:'ALP',val:v.alp,unit:'U/L',ref:refs.alp},
+        {g:'Enzymes',p:'GGT',val:v.ggt,unit:'U/L',ref:refs.ggt},
+        {g:'Protein',p:'Total Protein',val:v.tp,unit:'g/dL',ref:refs.tp},
+        {g:'Protein',p:'Albumin',val:v.lalb,unit:'g/dL',ref:refs.lalb},
+        {g:'Protein',p:'Globulin',val:glob,unit:'g/dL',ref:refs.glob},
+        {g:'Protein',p:'A/G Ratio',val:ag,unit:'',ref:refs.ag},
+      ]};
+    }
+  },
+
+  lipid: { title:'Lipid Profile', desc:'Friedewald LDL, VLDL, and cardiac risk ratios.',
+    formulas:'<strong>VLDL</strong> = TG ÷ 5 | <strong>LDL (Friedewald)</strong> = TC − HDL − VLDL (invalid if TG≥400) | <strong>Non-HDL</strong> = TC − HDL',
+    patient:[], sections:[{label:'Direct Values', advanced:false, fields:[
+      {id:'tc',label:'Total Cholesterol',unit:'mg/dL',req:true,max:1000},
+      {id:'hdl',label:'HDL',unit:'mg/dL',req:true,max:200},
+      {id:'tg',label:'Triglycerides',unit:'mg/dL',req:true,max:2000}
+    ]}],
+    refs:()=>({tc:[0,200],hdl:[40,150],tg:[0,150],ldl:[0,100],vldl:[5,30],nonhdl:[0,130],tchdl:[0,5]}),
+    compute:(v,refs)=>{
+      const vldl=+(v.tg/5).toFixed(1);
+      const ldl=(v.tg<400)?+(v.tc-v.hdl-vldl).toFixed(1):null;
+      const nonhdl=+(v.tc-v.hdl).toFixed(1);
+      const tchdl=+(v.tc/v.hdl).toFixed(2);
+      return {interpTitle:"🔬 Lipid Interpretation", interpretation: ldl!==null?`LDL is ${ldl} mg/dL. TC/HDL ratio: ${tchdl}.`:'TG ≥400 mg/dL — Friedewald LDL formula is invalid; consider direct LDL measurement.', rows:[
+        {g:'Lipids',p:'Total Cholesterol',val:v.tc,unit:'mg/dL',ref:refs.tc},
+        {g:'Lipids',p:'HDL',val:v.hdl,unit:'mg/dL',ref:refs.hdl},
+        {g:'Lipids',p:'Triglycerides',val:v.tg,unit:'mg/dL',ref:refs.tg,panic:[0,1000]},
+        {g:'Calculated',p:'VLDL',val:vldl,unit:'mg/dL',ref:refs.vldl},
+        {g:'Calculated',p:'LDL',val:ldl,unit:'mg/dL',ref:refs.ldl},
+        {g:'Calculated',p:'Non-HDL Cholesterol',val:nonhdl,unit:'mg/dL',ref:refs.nonhdl},
+        {g:'Calculated',p:'TC/HDL Ratio',val:tchdl,unit:'',ref:refs.tchdl},
+      ]};
+    }
+  },
+
+  diab: { title: 'Metabolic & Diabetic Panel', desc: 'eAG and HOMA-IR.', patient: [], sections:[ { label:'Glucose & HbA1c', advanced: false, fields:[ {id:'glu', label:'Fasting Glucose', unit:'mg/dL', req:false, max: 1500}, {id:'a1c', label:'HbA1c', unit:'%', req:false, max: 25} ]}, { label:'Insulin', advanced: false, fields:[ {id:'ins', label:'Fasting Insulin', unit:'µU/mL', req:false, max: 500} ]} ], refs: () => ({ glu:[70,99], a1c:[4.0,5.6], eag:[70,126], homa:[0.5,1.9] }), compute: (v, refs) => { const eag = v.a1c ? +((28.7 * v.a1c) - 46.7).toFixed(1) : null; const homa = (v.glu&&v.ins) ? +((v.glu * v.ins) / 405).toFixed(2) : null; return { interpTitle: "🔬 Metabolic", interpretation: homa?`HOMA-IR is ${homa}`:'', rows: [ {g:'Glycemic', p:'Fasting Glucose', val:v.glu, unit:'mg/dL', ref:refs.glu, panic:[40,500]}, {g:'Glycemic', p:'HbA1c', val:v.a1c, unit:'%', ref:refs.a1c}, {g:'Glycemic', p:'Est Avg Glucose', val:eag, unit:'mg/dL', ref:refs.eag}, {g:'Resistance', p:'HOMA-IR', val:homa, unit:'', ref:refs.homa} ]}; } },
+
+  coag: { title: 'Coagulation — PT / INR', desc: 'PT/INR', patient:[], sections:[{label:'PT', advanced:false, fields:[{id:'pt_pat',label:'PT Pat',unit:'sec',req:true,max:200},{id:'pt_ctrl',label:'PT Ctrl',unit:'sec',req:true,max:50},{id:'isi',label:'ISI',unit:'',req:false,max:3}]}], refs:()=>({inr:[0.8,1.2]}), compute:(v,refs)=>{const inr=+(Math.pow(v.pt_pat/v.pt_ctrl, v.isi||1.0)).toFixed(2); return {interpTitle:"INR",interpretation:`INR is ${inr}`,rows:[{g:'Coag',p:'INR',val:inr,unit:'',ref:refs.inr,panic:[0,5]}]}; } },
+
+  iron: { title:'Iron Studies', desc:'TSAT, UIBC, and iron panel interpretation.',
+    formulas:'<strong>UIBC</strong> = TIBC − Serum Iron | <strong>TSAT %</strong> = (Serum Iron ÷ TIBC) × 100',
+    patient:[], sections:[{label:'Iron Panel', advanced:false, fields:[
+      {id:'fe',label:'Serum Iron',unit:'µg/dL',req:true,max:1000},
+      {id:'tibc',label:'TIBC',unit:'µg/dL',req:true,max:1500},
+      {id:'ferr',label:'Ferritin',unit:'ng/mL',req:false,max:5000}
+    ]}],
+    refs:(g)=>({fe:g==='male'?[65,175]:[50,170], tibc:[250,450], tsat:[20,50], uibc:[110,370], ferr:g==='male'?[24,336]:[11,307]}),
+    compute:(v,refs)=>{
+      const uibc=+(v.tibc-v.fe).toFixed(1);
+      const tsat=+(v.fe/v.tibc*100).toFixed(1);
+      let interp = `TSAT is ${tsat}%. `;
+      if(tsat<20 && v.ferr && v.ferr<30) interp += 'Pattern consistent with iron deficiency anemia.';
+      else if(tsat>50 && v.ferr && v.ferr>300) interp += 'Pattern consistent with iron overload — correlate clinically.';
+      return {interpTitle:"🔬 Iron Studies Interpretation", interpretation:interp, rows:[
+        {g:'Iron Panel',p:'Serum Iron',val:v.fe,unit:'µg/dL',ref:refs.fe},
+        {g:'Iron Panel',p:'TIBC',val:v.tibc,unit:'µg/dL',ref:refs.tibc},
+        {g:'Iron Panel',p:'UIBC',val:uibc,unit:'µg/dL',ref:refs.uibc},
+        {g:'Iron Panel',p:'Ferritin',val:v.ferr,unit:'ng/mL',ref:refs.ferr},
+        {g:'Calculated',p:'Transferrin Saturation',val:tsat,unit:'%',ref:refs.tsat},
+      ]};
+    }
+  },
+
+  reagent: { title: 'Reagents & Dilutions', desc: 'C1V1, Ratios, Simple Dilutions.', patient: [], sections:[ { label:'Ratio (R1:R2)', advanced: false, fields:[ {id:'r1', label:'Part 1', unit:'parts', max: 1000}, {id:'r2', label:'Part 2', unit:'parts', max: 1000}, {id:'vol_ratio', label:'Total Vol', unit:'µL', max: 100000} ]}, { label:'Simple Dilution (1:X)', advanced: false, fields:[ {id:'dil_factor', label:'Dilution Factor', unit:'(e.g. 10)', max: 10000}, {id:'vol_dil', label:'Total Vol', unit:'µL', max: 100000} ]} ], refs: () => ({}), compute: (v, refs) => { let rows = []; if (v.r1 && v.r2 && v.vol_ratio) { const pv = v.vol_ratio / (v.r1 + v.r2); rows.push({g:'Mix', p:'R1 Vol', val:+(pv*v.r1).toFixed(2), unit:'µL'}, {g:'Mix', p:'R2 Vol', val:+(pv*v.r2).toFixed(2), unit:'µL'}); } if (v.dil_factor && v.vol_dil) { const sv = +(v.vol_dil/v.dil_factor).toFixed(2); rows.push({g:'Dilute', p:'Sample', val:sv, unit:'µL'}, {g:'Dilute', p:'Diluent', val:+(v.vol_dil-sv).toFixed(2), unit:'µL'}); } return { interpTitle: "🔬 Instructions", interpretation: "Calculated preparation volumes.", rows: rows }; } }
+};
+
+function validateInput(input, maxVal) {
+    const val = parseFloat(input.value); const errSpan = input.parentNode.querySelector('.inline-error-text');
+    if (!isNaN(val) && val > maxVal) { input.classList.add('error-field'); if(errSpan) { errSpan.textContent = `Max expected: ${maxVal}`; errSpan.style.display = 'block'; }
+    } else { input.classList.remove('error-field'); if(errSpan) errSpan.style.display = 'none'; }
+}
+
+function buildPatientRow(fields) {
+  const row = document.getElementById('pat-row'); row.innerHTML = '';
+  if(!fields.length){row.style.display='none';return;}
+  row.style.display='grid';
+  if(fields.includes('gender')) row.innerHTML += `<div class="field"><label>Gender</label><select id="p_gender"><option value="male">Male</option><option value="female">Female</option></select></div>`;
+  if(fields.includes('age')) row.innerHTML += `<div class="field"><label>Age</label><input type="number" id="p_age" inputmode="numeric" placeholder="e.g. 35"/></div>`;
+}
+
+function buildSections(sections) {
+  const cont = document.getElementById('field-sections'); cont.innerHTML = '';
+  let basicHTML = '', advHTML = '';
+  sections.forEach(sec => {
+    let html = `<div class="section-divider">${sec.label}</div><div class="input-grid">`;
+    html += sec.fields.map(f=>`
+        <div class="field">
+            <label>${f.req?'<span class="req-star">★</span>':''}${f.label}</label>
+            <input type="number" inputmode="decimal" id="f_${f.id}" placeholder="${f.ph||''}"
+                   class="${f.req?'required-field':''}" ${f.max ? `oninput="validateInput(this, ${f.max})"` : ''}>
+            <span class="unit-hint">${f.unit}</span><span class="inline-error-text"></span>
+        </div>`).join('');
+    html += `</div>`;
+    if(sec.advanced) advHTML += html; else basicHTML += html;
+  });
+  if(advHTML !== '') cont.innerHTML = basicHTML + `<button class="adv-toggle" onclick="this.nextElementSibling.classList.toggle('visible');">⚙️ Toggle Advanced</button><div class="adv-container">${advHTML}</div>`;
+  else cont.innerHTML = basicHTML;
+}
+
+function switchTest(id, btn) {
+  currentTest = id;
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active')); if(btn) btn.classList.add('active');
+  resetAll(false);
+
+  ['patient-card', 'qc-card', 'conv-card', 'preanal-card', 'pdfimport-card'].forEach(c => document.getElementById(c).classList.remove('visible'));
+  document.getElementById('btn-calc').style.display = 'none';
+
+  if (id === 'qc') {
+      currentMode = 'qc';
+      document.getElementById('qc-card').classList.add('visible');
+      document.getElementById('btn-calc').style.display = 'block';
+  } else if (id === 'converter') {
+      currentMode = 'util';
+      document.getElementById('conv-card').classList.add('visible');
+      buildConverter();
+  } else if (id === 'preanal') {
+      currentMode = 'util';
+      document.getElementById('preanal-card').classList.add('visible');
+      buildPreAnal();
+  } else if (id === 'pdfimport') {
+      currentMode = 'util';
+      document.getElementById('pdfimport-card').classList.add('visible');
+      populatePdfTargetSelect();
+  } else {
+      currentMode = 'patient';
+      document.getElementById('patient-card').classList.add('visible');
+      document.getElementById('btn-calc').style.display = 'block';
+      document.getElementById('test-title').textContent = TESTS[id].title;
+      document.getElementById('test-desc').textContent = TESTS[id].desc;
+      buildPatientRow(TESTS[id].patient); buildSections(TESTS[id].sections);
+  }
+}
+
+function calculatePatient() {
+  const def = TESTS[currentTest]; const g = document.getElementById('p_gender')?.value || 'male'; const a = document.getElementById('p_age')?.value;
+  const pat = { gender: g, age: a ? parseInt(a) : null }; const refs = def.refs ? def.refs(g) : {};
+  const v = {}; const missing = [];
+  document.getElementById('global-error').style.display='none'; document.getElementById('panic-banner').style.display='none';
+
+  def.sections.forEach(sec => sec.fields.forEach(f => {
+    const el = document.getElementById('f_'+f.id); if (!el) return;
+    if (el.value === '') { v[f.id] = null; if(f.req) missing.push(f.label); } else { v[f.id] = parseFloat(el.value); }
+  }));
+
+  if (missing.length > 0) {
+      const msg = document.getElementById('global-error'); msg.innerHTML = '<strong>Missing:</strong> ' + missing.join(', '); msg.style.display = 'block'; return;
+  }
+  const data = def.compute(v, refs, pat);
+  if(data.interpretation) { document.getElementById('interp-title').innerHTML = data.interpTitle; document.getElementById('interp-text').innerHTML = data.interpretation; document.getElementById('interp-box').style.display = 'block'; }
+  else { document.getElementById('interp-box').style.display = 'none'; }
+
+  const tbody = document.getElementById('res-body'); tbody.innerHTML=''; let grp=''; let hasPanic = false; let panicMsgs = [];
+  data.rows.forEach(row => {
+    if(row.val===null || row.val===undefined) return;
+    if(row.g!==grp){ grp=row.g; tbody.innerHTML+=`<tr class="group-row"><td colspan="5">${row.g}</td></tr>`; }
+    let flag = (currentTest === 'reagent') ? 'CALC' : 'NORMAL'; let fClass = (currentTest === 'reagent') ? 'info' : 'normal'; let gauge = '';
+    if(row.ref && Object.keys(row.ref).length > 0) {
+        const [lo, hi] = row.ref; if(row.val < lo) { flag = 'LOW'; fClass = 'low'; } if(row.val > hi) { flag = 'HIGH'; fClass = 'high'; }
+        let pos = Math.max(0, Math.min(100, ((row.val - lo) / (hi - lo)) * 100)); gauge = `<div class="gauge-container"><div class="gauge-marker ${fClass}" style="left: ${pos}%;"></div></div>`;
+    }
+    if(row.panic && (row.val <= row.panic[0] || row.val >= row.panic[1])) { flag = 'CRITICAL'; fClass = 'critical'; hasPanic = true; panicMsgs.push(`${row.p}`); }
+    tbody.innerHTML+=`<tr><td>${row.p}</td><td><span class="pval ${fClass}">${row.val}</span>${gauge}</td><td>${row.unit}</td><td>${(row.ref&&Object.keys(row.ref).length)?`${row.ref[0]} - ${row.ref[1]}`:'-'}</td><td><span class="flag ${fClass}">${flag}</span></td></tr>`;
+  });
+
+  const pBanner = document.getElementById('panic-banner');
+  if(hasPanic) {
+    pBanner.innerHTML = `🔴 <strong>CRITICAL VALUE(S):</strong> ${panicMsgs.join(', ')}.
+      <div style="margin-top:8px;font-weight:500;font-size:0.85rem;">Protocol: 1️⃣ Verify sample (hemolysis / clotting / ID match) → 2️⃣ Repeat test immediately in duplicate → 3️⃣ If confirmed, notify the treating physician directly and document the time and recipient.</div>`;
+    pBanner.style.display = 'block';
+  }
+  const fBox = document.getElementById('formula-section'); const fContent = document.getElementById('formula-content');
+  if(def.formulas) { fContent.innerHTML = def.formulas.split('|').join('<br><br>'); fContent.classList.remove('visible'); fBox.style.display = 'block'; } else fBox.style.display = 'none';
+
+  document.getElementById('results-card').classList.add('visible');
+  if(currentTest !== 'reagent' && data.rows.length > 0) document.getElementById('btn-copy').classList.add('visible');
+  document.getElementById('btn-reset').classList.add('visible');
+  (hasPanic ? pBanner : document.getElementById('results-card')).scrollIntoView({behavior:'smooth'});
+}
+
+// ==========================================
+// UNIT CONVERTER
+// ==========================================
+const CONVERSIONS = [
+    { label: 'Glucose', factor: 0.0555, conv: 'mg/dL', si: 'mmol/L' },
+    { label: 'Creatinine', factor: 88.4, conv: 'mg/dL', si: 'µmol/L' },
+    { label: 'Bilirubin (T/D)', factor: 17.1, conv: 'mg/dL', si: 'µmol/L' },
+    { label: 'Cholesterol', factor: 0.0259, conv: 'mg/dL', si: 'mmol/L' },
+    { label: 'Triglycerides', factor: 0.0113, conv: 'mg/dL', si: 'mmol/L' },
+    { label: 'Calcium', factor: 0.25, conv: 'mg/dL', si: 'mmol/L' },
+    { label: 'Uric Acid', factor: 59.48, conv: 'mg/dL', si: 'µmol/L' },
+    { label: 'Urea', factor: 0.166, conv: 'mg/dL', si: 'mmol/L' },
+    { label: 'BUN', factor: 0.357, conv: 'mg/dL', si: 'mmol/L' },
+    { label: 'Hemoglobin', factor: 10, conv: 'g/dL', si: 'g/L' },
+    { label: 'Total Protein', factor: 10, conv: 'g/dL', si: 'g/L' },
+    { label: 'Albumin', factor: 10, conv: 'g/dL', si: 'g/L' },
+    { label: 'Iron', factor: 0.179, conv: 'µg/dL', si: 'µmol/L' },
+    { label: 'TIBC', factor: 0.179, conv: 'µg/dL', si: 'µmol/L' },
+    { label: 'Phosphorus', factor: 0.323, conv: 'mg/dL', si: 'mmol/L' },
+    { label: 'Magnesium', factor: 0.411, conv: 'mg/dL', si: 'mmol/L' },
+    { label: 'CRP', factor: 10, conv: 'mg/dL', si: 'mg/L' },
+    { label: 'ALT / AST / ALP / LDH / CK', factor: 1, conv: 'U/L', si: 'U/L', note: 'Enzyme activity units are already SI — no conversion needed; both sides use the same value.' }
+];
+
+function buildConverter() {
+    let html = '';
+    CONVERSIONS.forEach((c, i) => {
+        html += `<div class="conv-row">
+            <div><label style="font-weight:600;font-size:0.85rem;">${c.label}</label><br><input type="number" inputmode="decimal" id="c_conv_${i}" placeholder="${c.conv}" oninput="doConv(${i}, 'conv')"></div>
+            <div style="color:var(--muted); font-size:1.5rem; padding-top:15px;">↔</div>
+            <div><label style="font-weight:600;font-size:0.85rem;">&nbsp;</label><br><input type="number" inputmode="decimal" id="c_si_${i}" placeholder="${c.si}" oninput="doConv(${i}, 'si')"></div>
+        </div>${c.note ? `<div class="conv-note">${c.note}</div>` : ''}`;
+    });
+    html += `<div class="conv-row" style="border-top:1px solid var(--border); padding-top:16px; margin-top:8px;">
+        <div><label style="font-weight:600;font-size:0.85rem;">HbA1c (NGSP)</label><br><input type="number" inputmode="decimal" id="a1c_ngsp" placeholder="%" oninput="doHbA1c('ngsp')"></div>
+        <div style="color:var(--muted); font-size:1.5rem; padding-top:15px;">↔</div>
+        <div><label style="font-weight:600;font-size:0.85rem;">HbA1c (IFCC)</label><br><input type="number" inputmode="decimal" id="a1c_ifcc" placeholder="mmol/mol" oninput="doHbA1c('ifcc')"></div>
+    </div><div class="conv-note">IFCC = (NGSP % − 2.15) × 10.929</div>`;
+    document.getElementById('conv-body').innerHTML = html;
+}
+function doConv(index, source) {
+    const data = CONVERSIONS[index];
+    const valConv = document.getElementById(`c_conv_${index}`);
+    const valSi = document.getElementById(`c_si_${index}`);
+    if(source === 'conv') {
+        if(valConv.value === '') valSi.value = '';
+        else valSi.value = (parseFloat(valConv.value) * data.factor).toFixed(2);
+    } else {
+        if(valSi.value === '') valConv.value = '';
+        else valConv.value = (parseFloat(valSi.value) / data.factor).toFixed(2);
+    }
+}
+function doHbA1c(source) {
+    const ngsp = document.getElementById('a1c_ngsp'), ifcc = document.getElementById('a1c_ifcc');
+    if(source === 'ngsp') { if(ngsp.value==='') ifcc.value=''; else ifcc.value = ((parseFloat(ngsp.value)-2.15)*10.929).toFixed(1); }
+    else { if(ifcc.value==='') ngsp.value=''; else ngsp.value = ((parseFloat(ifcc.value)/10.929)+2.15).toFixed(2); }
+}
+
+// ==========================================
+// PRE-ANALYTICAL KNOWLEDGE BASE
+// ==========================================
+const TUBES = {
+  lavender:{name:'Lavender (EDTA)',hex:'#a855f7',colors:['purple','lavender','violet']},
+  gold:{name:'Gold / Yellow (SST-Gel)',hex:'#eab308',colors:['yellow','gold']},
+  citrate:{name:'Light Blue (Citrate)',hex:'#38bdf8',colors:['blue','light blue','sky blue']},
+  grey:{name:'Grey (Fluoride/Oxalate)',hex:'#94a3b8',colors:['grey','gray']},
+  green:{name:'Green (Heparin)',hex:'#22c55e',colors:['green']},
+  red:{name:'Red (Plain / No Additive)',hex:'#ef4444',colors:['red']},
+  pink:{name:'Pink (EDTA — Blood Bank)',hex:'#ec4899',colors:['pink']},
+  black:{name:'Black (Sodium Citrate — ESR)',hex:'#334155',colors:['black']},
+  urine:{name:'Urine Container',hex:'#f59e0b',colors:['yellow container']},
+  stool:{name:'Stool Container',hex:'#78716c',colors:[]},
+  swab:{name:'Sterile Swab / Transport Media',hex:'#6b7280',colors:[]},
+  none:{name:'No tube (bedside / direct sample)',hex:'#cbd5e1',colors:[]}
+};
+
+const PRE_ANAL_DATA = [
+  {n:'CBC (Complete Blood Count)',a:['cbc','complete blood count','hemogram','blood count'],tb:'lavender',v:'2 mL',c:'No',s:'24h at RT, 72h at 2–8°C',r:'Clotted sample, underfilled tube',m:'Automated cell counter (impedance/flow cytometry)',t:'30–60 min'},
+  {n:'ESR',a:['esr','erythrocyte sedimentation rate'],tb:'black',v:'1.6 mL (fill to line)',s:'Run within 2h at RT',r:'Clots, underfilled, delay >4h',m:'Westergren method',t:'1–2h'},
+  {n:'Reticulocyte Count',a:['retic','reticulocyte count','reticulocytes'],tb:'lavender',v:'2 mL',s:'24h at 2–8°C',m:'Supravital stain / flow cytometry',t:'1–2h'},
+  {n:'Peripheral Blood Smear (PBS)',a:['pbs','peripheral smear','blood film','pbf'],tb:'lavender',v:'2 mL, smear within 1h of draw',m:'Leishman/Wright stain, light microscopy',t:'1–2h'},
+  {n:'Hemoglobin Electrophoresis / HPLC',a:['hb electrophoresis','hplc','thalassemia profile','hb variant'],tb:'lavender',v:'2–3 mL',m:'HPLC / capillary electrophoresis',t:'Same day – 24h'},
+  {n:'PT / INR',a:['pt','inr','prothrombin time'],tb:'citrate',v:'1.8 mL (9:1 ratio, fill exactly)',c:'Yes, within 1h',s:'4h at RT unspun; 24h if spun/frozen',r:'Under/overfilled (wrong ratio), clotted, hemolyzed',m:'Clot-based (optical/mechanical)',t:'30–60 min'},
+  {n:'APTT',a:['aptt','ptt','activated partial thromboplastin time'],tb:'citrate',v:'1.8 mL (fill exactly)',c:'Yes',s:'4h at RT',r:'Wrong ratio, clotted',m:'Clot-based',t:'30–60 min'},
+  {n:'D-Dimer',a:['d-dimer','ddimer','d dimer'],tb:'citrate',v:'1.8 mL',s:'8h at RT (whole blood), 4h at 2–8°C once spun',m:'Immunoturbidimetric / ELISA',t:'1–2h'},
+  {n:'Fibrinogen',a:['fibrinogen'],tb:'citrate',v:'1.8 mL',m:'Clauss method',t:'1–2h'},
+  {n:'Bleeding Time (BT)',a:['bt','bleeding time'],tb:'none',v:'N/A (bedside)',m:'Ivy method',t:'Immediate (bedside)'},
+  {n:'Clotting Time (CT)',a:['ct','clotting time'],tb:'none',v:'N/A (bedside)',m:'Capillary tube method',t:'Immediate (bedside)'},
+  {n:'FBS (Fasting Blood Sugar)',a:['fbs','fasting blood sugar','fasting glucose'],tb:'grey',v:'2 mL',f:'8–12 hours fasting',c:'Yes',s:'24h at 2–8°C',r:'Hemolyzed, wrong tube (glycolysis without fluoride)',m:'GOD-POD / Hexokinase',t:'30–60 min'},
+  {n:'PPBS (Post-Prandial Blood Sugar)',a:['ppbs','post prandial','pp blood sugar','pp sugar'],tb:'grey',v:'2 mL',f:'2h after a meal',c:'Yes',s:'24h at 2–8°C',m:'GOD-POD / Hexokinase',t:'30–60 min'},
+  {n:'RBS (Random Blood Sugar)',a:['rbs','random blood sugar','random glucose'],tb:'grey',v:'2 mL',f:'None required',m:'GOD-POD / Hexokinase',t:'30–60 min'},
+  {n:'HbA1c (Glycated Hemoglobin)',a:['hba1c','glycated hemoglobin','a1c'],tb:'lavender',v:'2 mL',f:'Not required',s:'7 days at 2–8°C',m:'HPLC / Immunoturbidimetric',t:'1–2h'},
+  {n:'OGTT (Glucose Tolerance Test)',a:['gtt','ogtt','glucose tolerance test'],tb:'grey',v:'2 mL per timepoint (multiple draws)',f:'8–12h fasting, then 75g glucose load',m:'GOD-POD',t:'2–3h (test duration)'},
+  {n:'Urea',a:['urea','blood urea'],tb:'gold',v:'3–5 mL',c:'Yes, after clotting 30 min',s:'24h at RT, 5 days at 2–8°C',m:'GLDH / Urease-based',t:'30–60 min'},
+  {n:'BUN (Blood Urea Nitrogen)',a:['bun','blood urea nitrogen'],tb:'gold',v:'3–5 mL',m:'Same specimen as Urea (Urea × 0.467)',t:'30–60 min'},
+  {n:'Creatinine',a:['creat','creatinine','s creatinine','serum creatinine'],tb:'gold',v:'3–5 mL',r:'Hemolysis interferes with Jaffe method',m:'Jaffe / Enzymatic',t:'30–60 min'},
+  {n:'Uric Acid',a:['uric acid','ua'],tb:'gold',v:'3–5 mL',f:'Fasting preferred',m:'Uricase-POD',t:'30–60 min'},
+  {n:'KFT (Kidney Function Test Panel)',a:['kft','rft','kidney function test','renal function test'],tb:'gold',v:'3–5 mL',f:'Fasting preferred',s:'24h at RT, 5 days at 2–8°C',r:'Hemolyzed sample',m:'Includes Urea, Creatinine, Uric Acid, Electrolytes',t:'30–60 min'},
+  {n:'Total Bilirubin',a:['tbil','total bilirubin','t bili','t. bilirubin'],tb:'gold',v:'3–5 mL',r:'Protect from light; hemolysis affects result',s:'Protect from light, 3 days at 2–8°C',m:'Diazo method (Jendrassik-Grof)',t:'30–60 min'},
+  {n:'Direct Bilirubin',a:['dbil','direct bilirubin','d bili','conjugated bilirubin'],tb:'gold',v:'3–5 mL',r:'Protect from light',s:'Protect from light, 3 days at 2–8°C',m:'Diazo method',t:'30–60 min'},
+  {n:'SGOT / AST',a:['ast','sgot'],tb:'gold',v:'3–5 mL',r:'Hemolysis falsely elevates',m:'IFCC kinetic UV',t:'30–60 min'},
+  {n:'SGPT / ALT',a:['alt','sgpt'],tb:'gold',v:'3–5 mL',r:'Hemolysis falsely elevates',m:'IFCC kinetic UV',t:'30–60 min'},
+  {n:'ALP (Alkaline Phosphatase)',a:['alp','alkaline phosphatase'],tb:'gold',v:'3–5 mL',r:'Avoid EDTA/citrate tubes (chelate cofactors)',m:'IFCC / pNPP kinetic',t:'30–60 min'},
+  {n:'GGT',a:['ggt','gamma gt','gamma glutamyl transferase'],tb:'gold',v:'3–5 mL',m:'Kinetic (Szasz method)',t:'30–60 min'},
+  {n:'LDH',a:['ldh','lactate dehydrogenase'],tb:'gold',v:'3–5 mL',r:'Hemolysis grossly elevates result',m:'Kinetic UV',t:'30–60 min'},
+  {n:'Amylase',a:['amylase','s amylase','serum amylase'],tb:'gold',v:'3–5 mL',m:'Kinetic (CNPG3 substrate)',t:'30–60 min'},
+  {n:'Lipase',a:['lipase','s lipase'],tb:'gold',v:'3–5 mL',m:'Enzymatic colorimetric',t:'30–60 min'},
+  {n:'LFT (Liver Function Test Panel)',a:['lft','liver function test','liver panel'],tb:'gold',v:'3–5 mL',c:'Yes',s:'24h at RT, 5 days at 2–8°C',m:'Includes Bilirubin, AST, ALT, ALP, Protein',t:'30–60 min'},
+  {n:'Total Protein',a:['total protein','tp','serum protein'],tb:'gold',v:'3–5 mL',m:'Biuret method',t:'30–60 min'},
+  {n:'Albumin',a:['albumin','alb','s albumin'],tb:'gold',v:'3–5 mL',m:'BCG / BCP dye-binding',t:'30–60 min'},
+  {n:'Total Cholesterol',a:['cholesterol','total cholesterol','tc'],tb:'gold',v:'3–5 mL',f:'9–12h fasting preferred',m:'CHOD-POD',t:'30–60 min'},
+  {n:'HDL Cholesterol',a:['hdl','hdl cholesterol'],tb:'gold',v:'3–5 mL',f:'Fasting preferred',m:'Direct homogeneous assay',t:'30–60 min'},
+  {n:'LDL Cholesterol',a:['ldl','ldl cholesterol'],tb:'gold',v:'3–5 mL',f:'Fasting preferred',m:'Calculated (Friedewald) or direct assay',t:'30–60 min'},
+  {n:'Triglycerides',a:['tg','triglycerides','trig'],tb:'gold',v:'3–5 mL',f:'12h fasting required',r:'Non-fasting sample falsely elevates',m:'GPO-POD',t:'30–60 min'},
+  {n:'Lipid Profile Panel',a:['lipid profile','lipid panel'],tb:'gold',v:'3–5 mL',f:'12h fasting required',s:'24h at RT',m:'Includes TC, HDL, LDL, TG',t:'30–60 min'},
+  {n:'Sodium',a:['na','sodium','serum sodium'],tb:'green',v:'3 mL',c:'Yes, immediately',r:'Hemolyzed, prolonged tourniquet',m:'ISE (Ion Selective Electrode)',t:'Stat: 15–30 min'},
+  {n:'Potassium',a:['k','potassium','serum potassium'],tb:'green',v:'3 mL',c:'Yes, immediately',r:'Hemolysis falsely elevates significantly; delayed separation',m:'ISE',t:'Stat: 15–30 min'},
+  {n:'Chloride',a:['cl','chloride'],tb:'green',v:'3 mL',m:'ISE',t:'30 min'},
+  {n:'Bicarbonate',a:['hco3','bicarbonate','co2','total co2'],tb:'green',v:'Fill completely, avoid air exposure',r:'Air exposure causes CO2 loss',m:'Enzymatic / titration',t:'30 min'},
+  {n:'Electrolytes Panel',a:['electrolytes','stat electrolytes'],tb:'green',v:'3 mL',c:'Yes, centrifuge immediately',s:'Same day, run promptly',m:'Includes Na, K, Cl, HCO3',t:'Stat: 15–30 min'},
+  {n:'Calcium (Total)',a:['ca','calcium','total calcium','s calcium'],tb:'gold',v:'3–5 mL',m:'Arsenazo III / OCPC',t:'30–60 min'},
+  {n:'Ionized Calcium',a:['ica','ionized calcium'],tb:'green',v:'Anaerobic collection, no gel separator',c:'No, run immediately',m:'ISE',t:'Stat'},
+  {n:'Phosphorus',a:['phos','phosphorus','inorganic phosphate'],tb:'gold',v:'3–5 mL',r:'Hemolysis falsely elevates',m:'Ammonium molybdate UV',t:'30–60 min'},
+  {n:'Magnesium',a:['mg','magnesium','s magnesium'],tb:'gold',v:'3–5 mL',r:'Hemolysis falsely elevates',m:'Xylidyl blue / Calmagite',t:'30–60 min'},
+  {n:'Serum Iron',a:['fe','serum iron','iron studies','iron'],tb:'gold',v:'3–5 mL',f:'Morning fasting sample preferred (diurnal variation)',m:'Ferrozine method',t:'30–60 min'},
+  {n:'TIBC',a:['tibc','total iron binding capacity'],tb:'gold',v:'3–5 mL',m:'Ferrozine-based (after saturation)',t:'1–2h'},
+  {n:'Ferritin',a:['ferritin','s ferritin'],tb:'gold',v:'3–5 mL',m:'CLIA / ECLIA',t:'1–2h'},
+  {n:'Troponin I / T',a:['troponin','trop i','trop t','cardiac troponin'],tb:'gold',v:'3–5 mL',r:'Hemolysis may interfere',m:'CLIA / ECLIA',t:'Stat: 30–60 min'},
+  {n:'CK-MB',a:['ck-mb','ckmb'],tb:'gold',v:'3–5 mL',m:'Immunoinhibition / CLIA',t:'Stat: 30–60 min'},
+  {n:'CK Total (CPK)',a:['ck','cpk','creatine kinase'],tb:'gold',v:'3–5 mL',r:'Avoid vigorous exercise/IM injection before draw',m:'Kinetic UV',t:'30–60 min'},
+  {n:'BNP / NT-proBNP',a:['bnp','nt-probnp','ntprobnp'],tb:'lavender',v:'2 mL (EDTA plasma)',m:'ECLIA',t:'1–2h'},
+  {n:'Homocysteine',a:['homocysteine'],tb:'lavender',v:'2 mL, transport on ice, separate within 1h',m:'CLIA / HPLC',t:'1–2h'},
+  {n:'TSH',a:['tsh','thyroid stimulating hormone'],tb:'gold',v:'3–5 mL',m:'CLIA / ECLIA',t:'1–2h'},
+  {n:'Free T3 (FT3)',a:['ft3','free t3'],tb:'gold',v:'3–5 mL',m:'CLIA',t:'1–2h'},
+  {n:'Free T4 (FT4)',a:['ft4','free t4'],tb:'gold',v:'3–5 mL',m:'CLIA',t:'1–2h'},
+  {n:'Total T3',a:['t3','total t3'],tb:'gold',v:'3–5 mL',m:'CLIA',t:'1–2h'},
+  {n:'Total T4',a:['t4','total t4'],tb:'gold',v:'3–5 mL',m:'CLIA',t:'1–2h'},
+  {n:'Thyroid Panel',a:['thyroid profile','thyroid panel','thy'],tb:'gold',v:'3–5 mL',m:'Includes TSH, FT3/T3, FT4/T4',t:'1–2h'},
+  {n:'Anti-TPO',a:['anti-tpo','atpo','anti thyroid peroxidase'],tb:'gold',v:'3–5 mL',m:'CLIA',t:'Same day – 24h'},
+  {n:'Cortisol',a:['cortisol','s cortisol'],tb:'gold',v:'3–5 mL',f:'Sample timing critical (8am/4pm)',m:'CLIA',t:'1–2h'},
+  {n:'Fasting Insulin',a:['insulin','fasting insulin'],tb:'gold',v:'3–5 mL',f:'8–12h fasting',m:'CLIA',t:'1–2h'},
+  {n:'C-Peptide',a:['c-peptide','cpeptide'],tb:'gold',v:'3–5 mL',f:'Fasting preferred',m:'CLIA',t:'1–2h'},
+  {n:'PTH (Parathyroid Hormone)',a:['pth','parathyroid hormone'],tb:'lavender',v:'2 mL, transport on ice, process quickly (short half-life)',m:'ECLIA',t:'1–2h'},
+  {n:'Prolactin',a:['prolactin','prl'],tb:'gold',v:'3–5 mL',f:'Morning sample, avoid stress/nipple stimulation before draw',m:'CLIA',t:'1–2h'},
+  {n:'FSH',a:['fsh'],tb:'gold',v:'3–5 mL',m:'CLIA',t:'1–2h'},
+  {n:'LH',a:['lh'],tb:'gold',v:'3–5 mL',m:'CLIA',t:'1–2h'},
+  {n:'Testosterone (Total)',a:['testosterone','total testosterone'],tb:'gold',v:'3–5 mL',f:'Morning sample preferred (diurnal peak)',m:'CLIA',t:'1–2h'},
+  {n:'Estradiol (E2)',a:['estradiol','e2'],tb:'gold',v:'3–5 mL',m:'CLIA',t:'1–2h'},
+  {n:'Progesterone',a:['progesterone'],tb:'gold',v:'3–5 mL',m:'CLIA',t:'1–2h'},
+  {n:'Vitamin D (25-OH)',a:['vit d','vitamin d','25-oh vitamin d','25(oh)d'],tb:'gold',v:'3–5 mL',m:'CLIA',t:'Same day – 24h'},
+  {n:'Vitamin B12',a:['b12','vitamin b12','cobalamin'],tb:'gold',v:'3–5 mL',m:'CLIA',t:'Same day – 24h'},
+  {n:'Folate',a:['folate','folic acid'],tb:'gold',v:'3–5 mL',r:'Protect from light',m:'CLIA',t:'Same day – 24h'},
+  {n:'CRP (C-Reactive Protein)',a:['crp','c-reactive protein'],tb:'gold',v:'3–5 mL',m:'Immunoturbidimetric / CLIA',t:'30–60 min'},
+  {n:'RA Factor',a:['ra','ra factor','rheumatoid factor'],tb:'gold',v:'3–5 mL',m:'Latex agglutination / Nephelometry',t:'30–60 min'},
+  {n:'ASO (Antistreptolysin O)',a:['aso','antistreptolysin o'],tb:'gold',v:'3–5 mL',m:'Latex agglutination / Nephelometry',t:'30–60 min'},
+  {n:'Widal Test',a:['widal','widal test','typhoid test'],tb:'gold',v:'3–5 mL',m:'Slide / tube agglutination',t:'1–2h'},
+  {n:'Typhidot',a:['typhidot'],tb:'gold',v:'3–5 mL',m:'Immunochromatography (IgM/IgG)',t:'30–60 min'},
+  {n:'Dengue NS1 Antigen',a:['dengue ns1','ns1 antigen','dengue antigen'],tb:'gold',v:'3–5 mL',m:'ELISA / Rapid ICT',t:'30–60 min'},
+  {n:'Dengue IgM / IgG',a:['dengue igm','dengue igg','dengue serology','dengue antibody'],tb:'gold',v:'3–5 mL',m:'ELISA / Rapid ICT',t:'30–60 min'},
+  {n:'Malaria (MP / Antigen)',a:['mp','malaria parasite','malaria antigen','malaria'],tb:'lavender',v:'2 mL + thick & thin smear',m:'Microscopy (Leishman/Giemsa) + Rapid antigen test',t:'30–60 min'},
+  {n:'HBsAg',a:['hbsag','hepatitis b'],tb:'gold',v:'3–5 mL',m:'ELISA / CLIA / Rapid card',t:'30–60 min'},
+  {n:'Anti-HCV',a:['anti-hcv','hcv','hepatitis c'],tb:'gold',v:'3–5 mL',m:'ELISA / CLIA',t:'30–60 min'},
+  {n:'HIV (I & II)',a:['hiv','hiv 1 2','tridot','hiv screening'],tb:'gold',v:'3–5 mL',r:'Pre/post-test counselling required per protocol',m:'ELISA / Rapid (Tri-dot) / CLIA',t:'30–60 min'},
+  {n:'VDRL',a:['vdrl','syphilis test'],tb:'gold',v:'3–5 mL',m:'Flocculation (RPR/VDRL)',t:'30–60 min'},
+  {n:'PSA (Prostate Specific Antigen)',a:['psa','prostate specific antigen'],tb:'gold',v:'3–5 mL',f:'Avoid DRE/ejaculation 24–48h before draw',m:'CLIA',t:'1–2h'},
+  {n:'CA-125',a:['ca125','ca-125'],tb:'gold',v:'3–5 mL',m:'CLIA',t:'1–2h'},
+  {n:'CA 19-9',a:['ca19-9','ca 19-9'],tb:'gold',v:'3–5 mL',m:'CLIA',t:'1–2h'},
+  {n:'CEA (Carcinoembryonic Antigen)',a:['cea','carcinoembryonic antigen'],tb:'gold',v:'3–5 mL',m:'CLIA',t:'1–2h'},
+  {n:'AFP (Alpha Fetoprotein)',a:['afp','alpha fetoprotein'],tb:'gold',v:'3–5 mL',m:'CLIA',t:'1–2h'},
+  {n:'Urine Routine / Microscopy (R/E)',a:['urine re','urine r/e','urine routine','urinalysis'],tb:'urine',v:'10–20 mL midstream',r:'Delay >2h without preservative, contaminated sample',m:'Dipstick + microscopy',t:'30–60 min'},
+  {n:'Urine Culture & Sensitivity',a:['urine culture','urine c/s','urine cs'],tb:'urine',v:'Sterile container, clean-catch midstream',r:'Contaminated sample, delayed transport >2h',m:'Culture on CLED/MacConkey',t:'24–48h'},
+  {n:'Urine Microalbumin',a:['urine microalbumin','mca','uacr sample'],tb:'urine',v:'Spot / early morning sample',m:'Immunoturbidimetric',t:'1–2h'},
+  {n:'24h Urine Protein',a:['24h urine protein','24 hour urine protein'],tb:'urine',v:'Entire 24h collection',r:'Incomplete collection',m:'Turbidimetric / Biuret',t:'Same day'},
+  {n:'Urine Pregnancy Test',a:['urine hcg','pregnancy test','upt','beta hcg urine'],tb:'urine',v:'Early morning sample preferred',m:'Immunochromatography',t:'15–30 min'},
+  {n:'Blood Grouping & Rh Typing',a:['blood group','abo','rh typing','blood grouping'],tb:'pink',v:'2–3 mL',r:'Strict 2-identifier patient ID required',m:'Slide / tube / gel agglutination',t:'15–30 min'},
+  {n:'Crossmatch',a:['crossmatch','x-match','compatibility testing'],tb:'pink',v:'4–6 mL',r:'Strict 2-identifier patient ID; label at bedside',m:'Gel / tube technique',t:'45–60 min'},
+  {n:'Direct Coombs Test (DCT)',a:['dct','direct coombs','direct antiglobulin test'],tb:'lavender',v:'2 mL',m:'Gel card / tube',t:'30–60 min'},
+  {n:'Indirect Coombs Test (ICT)',a:['ict','indirect coombs','antibody screening'],tb:'pink',v:'2–3 mL',m:'Gel card / tube',t:'30–60 min'},
+  {n:'Stool Routine (R/E)',a:['stool re','stool routine','stool r/e'],tb:'stool',v:'Walnut-size sample',m:'Macroscopic + microscopy',t:'30–60 min'},
+  {n:'Occult Blood (Stool)',a:['occult blood','fobt'],tb:'stool',v:'Small stool sample',m:'Immunochromatography / Guaiac',t:'30–60 min'},
+  {n:'Semen Analysis',a:['semen analysis','sperm count'],tb:'none',v:'Entire ejaculate, sterile wide-mouth container, 2–7 days abstinence',m:'Manual / CASA',t:'1–2h'},
+  {n:'Sputum AFB',a:['sputum afb','afb smear','zn stain'],tb:'swab',v:'Early morning sputum sample',m:'Ziehl-Neelsen stain / CBNAAT',t:'Same day – 24h'},
+  {n:'Throat Swab Culture',a:['throat swab','throat culture'],tb:'swab',v:'Sterile swab',m:'Culture on Blood agar',t:'24–48h'},
+];
+PRE_ANAL_DATA.forEach(d => { const t = TUBES[d.tb]; if(t && t.colors) d.a = d.a.concat(t.colors); });
+
+function levenshtein(a,b){
+  const m=a.length,n=b.length; const dp=Array.from({length:m+1},()=>new Array(n+1).fill(0));
+  for(let i=0;i<=m;i++)dp[i][0]=i; for(let j=0;j<=n;j++)dp[0][j]=j;
+  for(let i=1;i<=m;i++) for(let j=1;j<=n;j++){ dp[i][j]=a[i-1]===b[j-1]?dp[i-1][j-1]:1+Math.min(dp[i-1][j],dp[i][j-1],dp[i-1][j-1]); }
+  return dp[m][n];
+}
+function escapeHtml(s){ return s.replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+function searchPA(term){
+  term = term.trim().toLowerCase(); if(!term) return [];
+  let scored = [];
+  PRE_ANAL_DATA.forEach(d=>{
+    const nameL = d.n.toLowerCase(); const hay = [nameL, ...d.a].join(' ');
+    let score = 999;
+    if(nameL === term || d.a.includes(term)) score = 0;
+    else if(nameL.startsWith(term) || d.a.some(al=>al.startsWith(term))) score = 1;
+    else if(hay.includes(term)) score = 2;
+    else if(term.length >= 3) {
+      let best = Math.min(levenshtein(term, nameL), ...d.a.map(al=>levenshtein(term, al)));
+      if(best <= 2) score = 3 + best;
+    }
+    if(score < 999) scored.push({d, score});
+  });
+  scored.sort((x,y)=> x.score - y.score);
+  return scored.map(s=>s.d);
+}
+
+function renderPADetail(d){
+  const tube = TUBES[d.tb];
+  return `<div class="pa-detail-card">
+    <h3><span class="tube-icon" style="background:linear-gradient(${tube.hex},${tube.hex} 65%, #333 65%);"></span>${d.n}</h3>
+    <div class="pa-detail-grid">
+      <div class="pa-detail-item"><div class="pdl">🧪 Tube</div><div class="pdv">${tube.name}</div></div>
+      <div class="pa-detail-item"><div class="pdl">💉 Volume</div><div class="pdv">${d.v}</div></div>
+      <div class="pa-detail-item"><div class="pdl">⏳ Fasting</div><div class="pdv">${d.f||'Not required'}</div></div>
+      <div class="pa-detail-item"><div class="pdl">🌀 Centrifuge</div><div class="pdv">${d.c||'As per lab SOP'}</div></div>
+      <div class="pa-detail-item"><div class="pdl">❄️ Stability</div><div class="pdv">${d.s||'Process promptly'}</div></div>
+      <div class="pa-detail-item"><div class="pdl">⚠️ Reject if</div><div class="pdv">${d.r||'Hemolyzed, clotted, or mislabeled sample'}</div></div>
+      <div class="pa-detail-item"><div class="pdl">📋 Method</div><div class="pdv">${d.m||'—'}</div></div>
+      <div class="pa-detail-item"><div class="pdl">⏱️ TAT</div><div class="pdv">${d.t||'Lab dependent'}</div></div>
+    </div>
+    <button class="pa-back" onclick="document.getElementById('pa-search').value=''; filterPA();">← Clear search</button>
+  </div>`;
+}
+
+function selectPA(name){ document.getElementById('pa-search').value = name; filterPA(); document.getElementById('pa-detail').scrollIntoView({behavior:'smooth'}); }
+
+function buildPreAnal(){ filterPA(); }
+
+function filterPA(){
+  const term = document.getElementById('pa-search').value;
+  const results = searchPA(term);
+  const body = document.getElementById('pa-body'); const detail = document.getElementById('pa-detail');
+  const noRes = document.getElementById('pa-noresult'); const tableWrap = document.getElementById('pa-table-wrap');
+  detail.innerHTML = ''; noRes.style.display = 'none'; tableWrap.style.display = 'none';
+
+  if(!term.trim()){ return; }
+
+  if(results.length === 0){
+    const all = [];
+    PRE_ANAL_DATA.forEach(d=>{ all.push({name:d.n, dist:levenshtein(term.toLowerCase(), d.n.toLowerCase())}); d.a.forEach(al=>all.push({name:d.n, dist:levenshtein(term.toLowerCase(), al)})); });
+    all.sort((a,b)=>a.dist-b.dist);
+    const seen = new Set(); const top = [];
+    for(const x of all){ if(!seen.has(x.name)){ seen.add(x.name); top.push(x.name); } if(top.length>=4) break; }
+    noRes.innerHTML = `❌ No matching test for "<strong>${escapeHtml(term)}</strong>"<div class="didmean">Did you mean: ${top.map(n=>`<span class="pa-chip" onclick="selectPA('${n.replace(/'/g,"\\'")}')">${n}</span>`).join('')}</div>`;
+    noRes.style.display = 'block';
+    return;
+  }
+  if(results.length === 1){ detail.innerHTML = renderPADetail(results[0]); return; }
+
+  tableWrap.style.display = 'block';
+  body.innerHTML = results.map(d=>{
+    const tube = TUBES[d.tb];
+    return `<tr class="pa-item" onclick="selectPA('${d.n.replace(/'/g,"\\'")}')"><td><strong>${d.n}</strong></td><td><span class="tube-badge" style="background:${tube.hex}">${tube.name}</span></td><td>${d.v}</td><td style="color:var(--muted);font-size:0.8rem;">${d.t||'-'}</td></tr>`;
+  }).join('');
+}
+
+// ==========================================
+// QC TRACKER — WESTGARD RULES + LEVEY-JENNINGS
+// ==========================================
+function calculateQC(){
+  const raw = document.getElementById('qc_data').value.trim();
+  const errEl = document.getElementById('qc-error'); errEl.style.display = 'none';
+  document.getElementById('qc-results-card').classList.remove('visible');
+  if(!raw){ errEl.textContent = 'Enter at least 2 QC data points.'; errEl.style.display = 'block'; return; }
+  const data = raw.split(',').map(s=>parseFloat(s.trim())).filter(n=>!isNaN(n));
+  if(data.length < 2){ errEl.textContent = 'Enter at least 2 valid numeric data points, separated by commas.'; errEl.style.display = 'block'; return; }
+
+  const targetMeanInput = parseFloat(document.getElementById('qc_mean').value);
+  const targetSdInput = parseFloat(document.getElementById('qc_sd').value);
+  const n = data.length;
+  const calcMean = data.reduce((a,b)=>a+b,0) / n;
+  const calcSd = Math.sqrt(data.reduce((a,b)=>a+Math.pow(b-calcMean,2),0) / (n>1?(n-1):1));
+  const mean = !isNaN(targetMeanInput) ? targetMeanInput : calcMean;
+  const sd = (!isNaN(targetSdInput) && targetSdInput>0) ? targetSdInput : (calcSd || Math.max(Math.abs(mean)*0.02, 0.01));
+  const cv = (sd && mean) ? +((sd/mean)*100).toFixed(2) : null;
+  const z = data.map(v => +((v-mean)/sd).toFixed(2));
+
+  let violations = data.map(()=>[]);
+  z.forEach((zi,i)=>{ if(Math.abs(zi)>3) violations[i].push('1-3s (Reject)'); else if(Math.abs(zi)>2) violations[i].push('1-2s (Warning)'); });
+  for(let i=1;i<z.length;i++){ if(Math.abs(z[i])>2 && Math.abs(z[i-1])>2 && Math.sign(z[i])===Math.sign(z[i-1]) && Math.sign(z[i])!==0) violations[i].push('2-2s (Reject)'); }
+  for(let i=1;i<z.length;i++){ if(Math.abs(z[i]-z[i-1])>4) violations[i].push('R-4s (Reject)'); }
+  for(let i=3;i<z.length;i++){ const w=z.slice(i-3,i+1); if(w.every(v=>v>1)||w.every(v=>v<-1)) violations[i].push('4-1s (Reject)'); }
+  for(let i=9;i<z.length;i++){ const w=z.slice(i-9,i+1); if(w.every(v=>v>0)||w.every(v=>v<0)) violations[i].push('10x (Reject)'); }
+
+  const anyReject = violations.some(v=>v.some(x=>x.includes('Reject')));
+
+  document.getElementById('qc-summary').innerHTML = `
+    <div class="sum-item"><span class="sv">${mean.toFixed(2)}</span><span class="sl">Mean</span></div>
+    <div class="sum-item"><span class="sv">${sd.toFixed(2)}</span><span class="sl">SD</span></div>
+    <div class="sum-item"><span class="sv">${cv!==null?cv+'%':'-'}</span><span class="sl">CV</span></div>
+    <div class="sum-item"><span class="sv" style="color:${anyReject?'var(--danger)':'var(--success)'}">${anyReject?'OUT OF CONTROL':'IN CONTROL'}</span><span class="sl">Status</span></div>
+  `;
+
+  document.getElementById('qc-res-body').innerHTML = data.map((v,i)=>{
+    const status = violations[i].length ? violations[i].join(', ') : 'Accept';
+    const fClass = violations[i].some(x=>x.includes('Reject')) ? 'critical' : violations[i].length ? 'warning' : 'normal';
+    return `<tr><td>${i+1}</td><td>${v}</td><td>${z[i]}</td><td><span class="flag ${fClass}">${status}</span></td></tr>`;
+  }).join('');
+
+  drawLJChart(data, mean, sd);
+  document.getElementById('qc-results-card').classList.add('visible');
+  document.getElementById('btn-reset').classList.add('visible');
+  document.getElementById('qc-results-card').scrollIntoView({behavior:'smooth'});
+}
+
+function drawLJChart(data, mean, sd){
+  const canvas = document.getElementById('ljChart'); const ctx = canvas.getContext('2d');
+  const w = canvas.width, h = canvas.height;
+  const isDark = document.body.getAttribute('data-theme') === 'dark';
+  ctx.fillStyle = isDark ? '#1e293b' : '#ffffff'; ctx.fillRect(0,0,w,h);
+  const padL=55, padR=20, padT=20, padB=30;
+  const plotW = w-padL-padR, plotH = h-padT-padB;
+  const effSd = sd || Math.max(Math.abs(mean)*0.05,1);
+  const yMin = mean - 4*effSd, yMax = mean + 4*effSd;
+  const yToPx = y => padT + plotH - ((y-yMin)/(yMax-yMin))*plotH;
+  const xToPx = i => padL + (data.length>1 ? (i/(data.length-1))*plotW : plotW/2);
+
+  ctx.font = '10px system-ui';
+  [-3,-2,-1,0,1,2,3].forEach(k=>{
+    const y = yToPx(mean + k*effSd);
+    ctx.beginPath(); ctx.moveTo(padL,y); ctx.lineTo(w-padR,y);
+    ctx.strokeStyle = k===0 ? (isDark?'#38bdf8':'#0284c7') : Math.abs(k)===3 ? '#f87171' : Math.abs(k)===2 ? '#fbbf24' : (isDark?'#475569':'#e2e8f0');
+    ctx.lineWidth = k===0 ? 2 : 1; ctx.stroke();
+    ctx.fillStyle = isDark ? '#94a3b8' : '#64748b';
+    ctx.fillText(k===0 ? 'Mean' : (k>0?'+':'')+k+'SD', 4, y+3);
+  });
+
+  ctx.strokeStyle = isDark ? '#38bdf8' : '#0284c7'; ctx.lineWidth = 2; ctx.beginPath();
+  data.forEach((v,i)=>{ const x=xToPx(i), y=yToPx(v); if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y); });
+  ctx.stroke();
+  data.forEach((v,i)=>{
+    const x = xToPx(i), y = yToPx(v); const zi = (v-mean)/effSd;
+    ctx.fillStyle = Math.abs(zi)>3 ? '#dc2626' : Math.abs(zi)>2 ? '#d97706' : (isDark?'#38bdf8':'#0284c7');
+    ctx.beginPath(); ctx.arc(x,y,4,0,Math.PI*2); ctx.fill();
+  });
+}
+
+function resetAll(clearInputs = true) {
+  if (clearInputs) document.querySelectorAll('input, textarea').forEach(el=>{ el.value=''; el.classList.remove('error-field'); });
+  document.querySelectorAll('.inline-error-text').forEach(el => el.style.display='none');
+  document.getElementById('btn-calc').disabled = false;
+  ['results-card', 'qc-results-card', 'btn-copy'].forEach(c => document.getElementById(c).classList.remove('visible'));
+  ['interp-box', 'global-error', 'qc-error', 'panic-banner'].forEach(c => document.getElementById(c).style.display='none');
+  if(clearInputs) window.scrollTo(0,0);
+}
+
+// ==========================================
+// MS WORD EXPORT
+// ==========================================
+function copyResults(){
+  const title = TESTS[currentTest] ? TESTS[currentTest].title : document.getElementById('res-title').textContent;
+  const rows = Array.from(document.querySelectorAll('#res-body tr')).map(tr=>{
+    const cells = Array.from(tr.children).map(td=>td.textContent.trim());
+    if(tr.classList.contains('group-row')) return `<tr><td colspan="5" style="font-weight:bold;background:#f1f5f9;padding:6px 10px;border:1px solid #ccc;">${cells[0]}</td></tr>`;
+    return `<tr>${cells.map(c=>`<td style="padding:6px 10px;border:1px solid #ccc;">${c}</td>`).join('')}</tr>`;
+  }).join('');
+  const html = `<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
+    <head><meta charset='utf-8'><title>${title}</title></head>
+    <body>
+      <h2 style="font-family:Calibri,sans-serif;">DiagCalc Pro — Laboratory Report</h2>
+      <p style="font-family:Calibri,sans-serif;">Test: ${title} &nbsp; | &nbsp; Date: ${new Date().toLocaleDateString()}</p>
+      <table style="border-collapse:collapse;width:100%;font-family:Calibri,sans-serif;font-size:11pt;">
+        <thead><tr><th style="border:1px solid #ccc;padding:6px;background:#e2e8f0;">Parameter</th><th style="border:1px solid #ccc;padding:6px;background:#e2e8f0;">Result</th><th style="border:1px solid #ccc;padding:6px;background:#e2e8f0;">Unit</th><th style="border:1px solid #ccc;padding:6px;background:#e2e8f0;">Reference</th><th style="border:1px solid #ccc;padding:6px;background:#e2e8f0;">Flag</th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </body></html>`;
+  const blob = new Blob(['\ufeff', html], { type: 'application/msword' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = `${title.replace(/[^a-z0-9]/gi,'_')}_Report.doc`;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+// ==========================================
+// ANALYZER PDF IMPORT
+// ==========================================
+const FIELD_ALIASES = {
+  hb:['hemoglobin','haemoglobin','hb'], rbc:['rbc count','red blood cell','rbc'], hct:['hematocrit','haematocrit','pcv','hct'],
+  wbc:['wbc','tlc','total leucocyte count','total wbc count','white blood cell'], neut:['neutrophil','neutrophils'], lymph:['lymphocyte','lymphocytes'], mono:['monocyte','monocytes'],
+  plt:['platelet count','platelet','plt'], rdwcv:['rdw-cv','rdw'], mpv:['mpv','mean platelet volume'],
+  creat:['creatinine','s.creatinine','serum creatinine'], bun:['bun','blood urea nitrogen'], uricac:['uric acid'],
+  sodium:['sodium','na+'], potass:['potassium','k+'], chlor:['chloride','cl-'], hco3:['bicarbonate','hco3'],
+  ca:['calcium','total calcium','s.calcium'], alb:['albumin'], tbil:['total bilirubin','t.bilirubin','t bili'], dbil:['direct bilirubin','d.bilirubin','d bili'],
+  ast:['ast','sgot'], alt:['alt','sgpt'], alp:['alkaline phosphatase','alp'], ggt:['ggt','gamma gt'], tp:['total protein'], lalb:['albumin'],
+  tc:['total cholesterol','cholesterol'], hdl:['hdl cholesterol','hdl'], tg:['triglycerides','triglyceride'],
+  glu:['glucose','fasting glucose','fbs'], a1c:['hba1c','glycated hemoglobin'], ins:['insulin','fasting insulin'],
+  fe:['serum iron','iron'], tibc:['tibc'], ferr:['ferritin'],
+  pt_pat:['pt patient','prothrombin time'], pt_ctrl:['pt control'],
+  u_creat:['urine creatinine'], u_mca:['microalbumin','urine microalbumin'], u_prot:['urine protein']
+};
+
+const pdfDrop = document.getElementById('pdf-drop');
+if(pdfDrop){
+  pdfDrop.addEventListener('dragover', e=>{ e.preventDefault(); pdfDrop.classList.add('drag'); });
+  pdfDrop.addEventListener('dragleave', ()=> pdfDrop.classList.remove('drag'));
+  pdfDrop.addEventListener('drop', e=>{ e.preventDefault(); pdfDrop.classList.remove('drag'); if(e.dataTransfer.files[0]) handlePdfFile(e.dataTransfer.files[0]); });
+}
+
+async function handlePdfFile(file){
+  if(!file) return;
+  const statusEl = document.getElementById('pdf-status');
+  document.getElementById('pdf-extract-wrap').style.display = 'none';
+  statusEl.textContent = 'Reading PDF…';
+  if(!window.pdfjsLib){ statusEl.textContent = '⚠️ PDF engine failed to load (check your internet connection) — try again.'; return; }
+  try {
+    const buf = await file.arrayBuffer();
+    const pdf = await pdfjsLib.getDocument({ data: buf }).promise;
+    let fullText = '';
+    for(let p=1; p<=pdf.numPages; p++){
+      const page = await pdf.getPage(p);
+      const content = await page.getTextContent();
+      const lines = {};
+      content.items.forEach(it=>{ const y = Math.round(it.transform[5]); (lines[y]=lines[y]||[]).push({x:it.transform[4], str:it.str}); });
+      const ys = Object.keys(lines).map(Number).sort((a,b)=>b-a);
+      fullText += ys.map(y=> lines[y].sort((a,b)=>a.x-b.x).map(i=>i.str).join(' ')).join('\n') + '\n';
+    }
+    const extracted = parseAnalyzerText(fullText);
+    renderPdfExtract(extracted, pdf.numPages);
+  } catch(err){
+    statusEl.textContent = '⚠️ Could not read this PDF. It may be a scanned image without selectable text — export a text-based report from the analyzer software instead.';
+    console.error(err);
+  }
+}
+
+function parseAnalyzerText(text){
+  const lines = text.split('\n'); const found = {};
+  lines.forEach(line=>{
+    const m = line.match(/([A-Za-z][A-Za-z0-9 .+()%\/\-]{1,40}?)\s*[:\-]?\s*([\d]+\.\d+|\d+)\s*([A-Za-zµ%\/]*)\s*$/);
+    if(!m) return;
+    const rawName = m[1].trim().toLowerCase().replace(/\s+/g,' ');
+    const val = parseFloat(m[2]);
+    if(isNaN(val)) return;
+    for(const [field, aliases] of Object.entries(FIELD_ALIASES)){
+      if(found[field] !== undefined) continue;
+      if(aliases.some(al => rawName===al || rawName.endsWith(al) || rawName.includes(al))){
+        found[field] = { label: m[1].trim(), value: val, unit: m[3]||'' };
+        break;
+      }
+    }
+  });
+  return found;
+}
+
+function renderPdfExtract(found, pageCount){
+  const body = document.getElementById('pdf-extract-body'); const wrap = document.getElementById('pdf-extract-wrap');
+  const keys = Object.keys(found);
+  document.getElementById('pdf-status').textContent = keys.length
+    ? `Scanned ${pageCount} page(s) — ${keys.length} value(s) recognized.`
+    : `Scanned ${pageCount} page(s) — no recognizable lab values found. Field names in this report may not match expected formats.`;
+  if(!keys.length){ wrap.style.display = 'none'; window._pdfExtracted = null; return; }
+  body.innerHTML = keys.map(k=>`<tr><td>${found[k].label}</td><td>${found[k].value} ${found[k].unit}</td><td>${k}</td></tr>`).join('');
+  window._pdfExtracted = found;
+  populatePdfTargetSelect();
+  wrap.style.display = 'block';
+}
+
+function populatePdfTargetSelect(){
+  const sel = document.getElementById('pdf-target-test'); if(!sel) return;
+  const ids = Object.keys(TESTS).filter(k=>k!=='reagent');
+  sel.innerHTML = ids.map(k=>`<option value="${k}">${TESTS[k].title}</option>`).join('');
+  if(window._pdfExtracted){
+    const extractedKeys = Object.keys(window._pdfExtracted);
+    let best=null, bestScore=-1;
+    ids.forEach(id=>{
+      const fieldIds = (TESTS[id].sections||[]).flatMap(s=>s.fields.map(f=>f.id));
+      const score = fieldIds.filter(f=>extractedKeys.includes(f)).length;
+      if(score>bestScore){ bestScore=score; best=id; }
+    });
+    if(best) sel.value = best;
+  }
+}
+
+function pushPdfToCalculator(){
+  const target = document.getElementById('pdf-target-test').value;
+  if(!window._pdfExtracted || !target) return;
+  const tabBtn = document.querySelector(`.tab[data-id="${target}"]`);
+  switchTest(target, tabBtn);
+  setTimeout(()=>{
+    Object.entries(window._pdfExtracted).forEach(([field, data])=>{
+      const el = document.getElementById('f_'+field);
+      if(el){ el.value = data.value; validateInput(el, 999999); }
+    });
+    document.getElementById('pdf-status').textContent = `Values pushed into ${TESTS[target].title}. Review each field, then tap Calculate.`;
+  }, 50);
+}
+
+// Init
+switchTest('cbc', document.querySelector('.tab'));
+</script>
+</body>
+</html>
